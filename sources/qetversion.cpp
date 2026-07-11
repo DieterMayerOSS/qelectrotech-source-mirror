@@ -32,7 +32,9 @@ namespace QetVersion
 
 		switch (VERSION_TYPE) {
 			case dev:
-				str.append(QStringLiteral("-dev"));
+				// Custom build marker (Qt6 port + complete German translation).
+				// The file-format version (toXmlAttribute) stays 0.100.1.
+				str.append(QStringLiteral("+qt6-de"));
 				break;
 			case alpha1:
 				str.append(QStringLiteral("-alpha 1 "));
