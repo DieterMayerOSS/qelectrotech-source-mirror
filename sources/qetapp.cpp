@@ -231,6 +231,26 @@ void QETApp::setLanguage(const QString &desired_language) {
 	// translation, then the base language ("pt"), then fall back to English.
 	// French is the application's source language and needs no translation.
 	const QString base_language = desired_language.section('_', 0, 0);
+
+	// French is the source language of the tr() literals, so any string the
+	// active translation does not (yet) cover falls back to French. To keep a
+	// non-French UI from leaking French text, install qet_en as a low-priority
+	// base translator underneath the desired-language translator. Qt queries
+	// the last-installed translator first, so lookups resolve as
+	// desired language -> English -> French source. Not needed when the desired
+	// language is itself French (source) or English (would be the base anyway).
+	if (base_language != "fr" && base_language != "en") {
+		if (qetEnTranslator.load("qet_en", languages_path))
+			qApp->installTranslator(&qetEnTranslator);
+		else
+			qWarning() << "failed to load"
+					   << "qet_en" << languages_path << "(" << __FILE__
+					   << __LINE__ << __FUNCTION__ << ")";
+	} else {
+		// keep setLanguage() idempotent across runtime language switches
+		qApp->removeTranslator(&qetEnTranslator);
+	}
+
 	bool loaded = qetTranslator.load("qet_" + desired_language, languages_path);
 	if (!loaded && base_language != desired_language)
 		loaded = qetTranslator.load("qet_" + base_language, languages_path);

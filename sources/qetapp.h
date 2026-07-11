@@ -188,6 +188,7 @@ class QETApp : public QObject
 		static QETApp *m_qetapp;
 		QTranslator qtTranslator;
 		QTranslator qetTranslator;
+		QTranslator qetEnTranslator;
 		QSystemTrayIcon *m_qsti;
 		QSplashScreen *m_splash_screen;
 		QMenu *menu_systray;
