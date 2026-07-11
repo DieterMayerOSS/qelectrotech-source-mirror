@@ -35,6 +35,6 @@ endif()
 FetchContent_Declare(
   SingleApplication
   GIT_REPOSITORY https://github.com/itay-grudev/SingleApplication.git
-  GIT_TAG        v3.2.0)
+  GIT_TAG        v3.5.6)
 
 FetchContent_MakeAvailable(SingleApplication)
