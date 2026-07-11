@@ -23,6 +23,15 @@ set(QAPPLICATION_CLASS QApplication)
 
 Include(FetchContent)
 
+# SingleApplication selects its Qt major version from QT_DEFAULT_MAJOR_VERSION
+# and defaults to Qt5 when it is unset. This module is included before QET's own
+# find_package(QT ...), so detect the Qt version early and pass it through, so
+# SingleApplication builds against the same Qt (5 or 6) as QElectroTech.
+if(NOT DEFINED QT_DEFAULT_MAJOR_VERSION)
+  find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
+  set(QT_DEFAULT_MAJOR_VERSION ${QT_VERSION_MAJOR})
+endif()
+
 FetchContent_Declare(
   SingleApplication
   GIT_REPOSITORY https://github.com/itay-grudev/SingleApplication.git

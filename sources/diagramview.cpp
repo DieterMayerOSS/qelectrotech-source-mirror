@@ -459,7 +459,7 @@ void DiagramView::mousePressEvent(QMouseEvent *e)
 
 		//Start drag view when hold the middle button
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 1) // ### Qt 6: remove
-	if (e->button() == Qt::MidButton)
+	if (e->button() == Qt::MiddleButton)
 #else
 #if TODO_LIST
 #pragma message("@TODO remove code for QT 6 or later")
@@ -516,7 +516,7 @@ void DiagramView::mouseMoveEvent(QMouseEvent *e)
 
 		// Drag the view
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 1) // ### Qt 6: remove
-	if (e->buttons() == Qt::MidButton)
+	if (e->buttons() == Qt::MiddleButton)
 #else
 #if TODO_LIST
 #pragma message("@TODO remove code for QT 6 or later")
@@ -584,7 +584,7 @@ void DiagramView::mouseReleaseEvent(QMouseEvent *e)
 
 		// Stop drag view
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 1) // ### Qt 6: remove
-	if (e->button() == Qt::MidButton)
+	if (e->button() == Qt::MiddleButton)
 #else
 #if TODO_LIST
 #pragma message("@TODO remove code for QT 6 or later")
@@ -1355,7 +1355,9 @@ void DiagramView::createTemplateFromSelection()
 	QFile file(full_path);
 	if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
 		QTextStream out(&file);
+		#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)  // Qt6: UTF-8 is the default
 		out.setCodec("UTF-8");
+		#endif
 		out << macro_doc.toString(4);
 		file.close();
 		qDebug() << "Template successfully saved to:" << full_path;

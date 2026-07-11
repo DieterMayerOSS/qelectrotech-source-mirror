@@ -836,7 +836,7 @@ void ElementsCollectionWidget::search()
 
 	hideCollection(true);
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)	// ### Qt 6: remove
-	const QStringList text_list = text.split("+", QString::SkipEmptyParts);
+	const QStringList text_list = text.split("+", Qt::SkipEmptyParts);
 #else
 #if TODO_LIST
 #pragma message("@TODO remove code for QT 5.14 or later")

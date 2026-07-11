@@ -103,7 +103,9 @@ bool TitleBlockTemplate::loadFromXmlFile(const QString &filepath) {
 
 	// parse its content as XML
 	QDomDocument xml_doc;
-	bool xml_parsing = xml_doc.setContent(&template_file);
+	// Qt6 QDomDocument::setContent() returns a ParseResult (explicit bool);
+	// static_cast keeps this working on both Qt5 (bool) and Qt6.
+	bool xml_parsing = static_cast<bool>(xml_doc.setContent(&template_file));
 	if (!xml_parsing) {
 		return(false);
 	}
@@ -396,7 +398,7 @@ void TitleBlockTemplate::parseRows(const QString &rows_string) {
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)	// ### Qt 6: remove
 	QStringList rows_descriptions =
-			rows_string.split(QChar(';'), QString::SkipEmptyParts);
+			rows_string.split(QChar(';'), Qt::SkipEmptyParts);
 #else
 #if TODO_LIST
 #pragma message("@TODO remove code for QT 5.14 or later")
@@ -438,7 +440,7 @@ void TitleBlockTemplate::parseColumns(const QString &cols_string) {
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)	// ### Qt 6: remove
 	QStringList cols_descriptions =
-			cols_string.split(QChar(';'), QString::SkipEmptyParts);
+			cols_string.split(QChar(';'), Qt::SkipEmptyParts);
 #else
 #if TODO_LIST
 #pragma message("@TODO remove code for QT 5.14 or later")

@@ -522,7 +522,7 @@ void CustomElementGraphicPart::stylesFromXml(const QDomElement &qde)
 
 		//Get the list of pair style/value
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)	// ### Qt 6: remove
-	QStringList styles = qde.attribute("style").split(";", QString::SkipEmptyParts);
+	QStringList styles = qde.attribute("style").split(";", Qt::SkipEmptyParts);
 #else
 #if TODO_LIST
 #pragma message("@TODO remove code for QT 5.14 or later")

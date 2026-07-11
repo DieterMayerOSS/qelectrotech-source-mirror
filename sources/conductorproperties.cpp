@@ -812,10 +812,10 @@ void ConductorProperties::readStyle(const QString &style_string) {
 
 	// recupere la liste des couples style / valeur
 #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)	// ### Qt 6: remove
-	QStringList styles = style_string.split(";", QString::SkipEmptyParts);
+	QStringList styles = style_string.split(";", Qt::SkipEmptyParts);
 #else
 #if TODO_LIST
-#pragma message("@TODO remove code QString::SkipEmptyParts for QT 5.14 or later")
+#pragma message("@TODO remove code Qt::SkipEmptyParts for QT 5.14 or later")
 #endif
 	QStringList styles = style_string.split(";", Qt::SkipEmptyParts);
 #endif

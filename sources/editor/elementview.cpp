@@ -373,7 +373,7 @@ ElementContent ElementView::pasteWithOffset(const QDomDocument &xml_document) {
 void ElementView::mousePressEvent(QMouseEvent* e)
 {
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 1) // ### Qt 6: remove
-	if (e->button() == Qt::MidButton)
+	if (e->button() == Qt::MiddleButton)
 #else
 #if TODO_LIST
 #pragma message("@TODO remove code for QT 6 or later")
@@ -395,7 +395,7 @@ void ElementView::mousePressEvent(QMouseEvent* e)
 void ElementView::mouseMoveEvent(QMouseEvent* e)
 {
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 1) // ### Qt 6: remove
-	if (e->buttons() == Qt::MidButton)
+	if (e->buttons() == Qt::MiddleButton)
 #else
 #if TODO_LIST
 #pragma message("@TODO remove code for QT 6 or later")
@@ -421,7 +421,7 @@ void ElementView::mouseMoveEvent(QMouseEvent* e)
 void ElementView::mouseReleaseEvent(QMouseEvent* e)
 {
 #if QT_VERSION < QT_VERSION_CHECK(5, 15, 1) // ### Qt 6: remove
-	if (e->button() == Qt::MidButton)
+	if (e->button() == Qt::MiddleButton)
 #else
 #if TODO_LIST
 #pragma message("@TODO remove code for QT 6 or later")

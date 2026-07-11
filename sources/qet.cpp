@@ -685,7 +685,9 @@ bool QET::writeXmlFile(QDomDocument &xml_doc, const QString &filepath, QString *
 
 	QTextStream out(&file);
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)	// ### Qt 6: remove
+	#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)  // Qt6: UTF-8 is the default
 	out.setCodec("UTF-8");
+	#endif
 #else
 #if TODO_LIST
 #pragma message("@TODO remove code for QT 6 or later")
@@ -823,7 +825,9 @@ bool QET::writeToFile(QDomDocument &xml_doc, QFile *file, QString *error_message
 	QTextStream out(file);
 	out.seek(0);
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)	// ### Qt 6: remove
+	#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)  // Qt6: UTF-8 is the default
 	out.setCodec("UTF-8");
+	#endif
 #else
 #if TODO_LIST
 #pragma message("@TODO remove code for QT 6 or later")

@@ -23,13 +23,13 @@ set(QET_COMPONENTS
   Svg
   Sql
   Network
+  Gui
   Widgets
   Concurrent)
 
 set(QET_PRIVATE_LIBRARIES
   Qt::PrintSupport
   Qt::Gui
-  Qt::GuiPrivate   # Required for QPdfEngine::drawHyperlink (PDF internal links)
   Qt::Xml
   Qt::Svg
   Qt::Sql

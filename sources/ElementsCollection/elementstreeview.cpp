@@ -135,7 +135,7 @@ void ElementsTreeView::startElementDrag(const ElementsLocation &location)
 
 								if (!dir_path.isEmpty()) {
 									#if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
-									QStringList parts = dir_path.split('/', QString::SkipEmptyParts);
+									QStringList parts = dir_path.split('/', Qt::SkipEmptyParts);
 									#else
 									QStringList parts = dir_path.split('/', Qt::SkipEmptyParts);
 									#endif

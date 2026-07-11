@@ -55,7 +55,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(
     QT
     NAMES
-    Qt5
+    Qt6 Qt5
     COMPONENTS
     ${QET_COMPONENTS}
     REQUIRED
@@ -67,13 +67,20 @@ find_package(
     ${QET_COMPONENTS}
     REQUIRED)
 
+# Qt6 exposes private modules as separate find_package components, whereas Qt5
+# creates the private target alongside its module. Request GuiPrivate explicitly
+# on Qt6 so Qt6::GuiPrivate (used for QPdfEngine::drawHyperlink) is available.
+if(QT_VERSION_MAJOR GREATER_EQUAL 6)
+    find_package(Qt6 REQUIRED COMPONENTS GuiPrivate)
+endif()
+
 find_package(SQLite3 REQUIRED)
 
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${QET_DIR}/sources/ui)
 
-qt5_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
+qt_create_translation(QM_FILES ${CMAKE_SOURCE_DIR} ${TS_FILES})
 set_source_files_properties(${TS_FILES} PROPERTIES OUTPUT_LOCATION "${QET_DIR}/lang")
-qt5_add_translation(QM_FILES ${TS_FILES})
+qt_add_translation(QM_FILES ${TS_FILES})
 
 # als laatse
 include(cmake/define_definitions.cmake)
@@ -109,6 +116,9 @@ target_link_libraries(
     SQLite::SQLite3
     ${KF5_PRIVATE_LIBRARIES}
     ${QET_PRIVATE_LIBRARIES}
+    # Private Gui module (QPdfEngine::drawHyperlink, PDF internal links).
+    # Qt6 has no versionless Qt::GuiPrivate alias, so use the versioned target.
+    Qt${QT_VERSION_MAJOR}::GuiPrivate
 )
 
 target_include_directories(
