@@ -26,11 +26,7 @@
 #include "xmlprojectelementcollectionitem.h"
 
 #include <QFutureWatcher>
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0) // ### Qt 6: remove
 #include <QtConcurrentMap>
-#else
-#include <QtConcurrentRun>
-#endif
 
 /**
 	@brief ElementsCollectionModel::ElementsCollectionModel
@@ -293,15 +289,38 @@ void ElementsCollectionModel::loadCollections(bool common_collection,
 			this, &ElementsCollectionModel::loadingProgressValueChanged);
 	connect(watcher, &QFutureWatcher<void>::progressRangeChanged,
 			this, &ElementsCollectionModel::loadingProgressRangeChanged);
-	connect(watcher, &QFutureWatcher<void>::finished,
-			this, &ElementsCollectionModel::loadingFinished);
-	connect(watcher, &QFutureWatcher<void>::finished, watcher, &QFutureWatcher<void>::deleteLater);
 
 	#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	m_future = QtConcurrent::map(m_items_list_to_setUp, setUpData);
 	#else
-	qDebug() << "Help code for QT 6 or later";
+	// setUpData() mutates QStandardItems (setText/setData/setFlags/setToolTip),
+	// which is unsafe from worker threads under Qt6. Split the work: parse each
+	// file item's on-disk data (file read + XML parsing) in parallel without
+	// touching the item, then apply the results on the GUI thread once the
+	// future finishes. Other item types (few) are set up synchronously.
+	QETApp::langFromSetting();   // warm the cached locale before the parallel phase
+	m_file_setups.clear();
+	for (ElementCollectionItem *eci : std::as_const(m_items_list_to_setUp))
+	{
+		if (eci->type() == FileElementCollectionItem::Type)
+			m_file_setups.append(
+				static_cast<FileElementCollectionItem *>(eci)->extractSetupData());
+		else
+			eci->setUpData();
+	}
+		// Apply parsed data on the GUI thread before loadingFinished() is emitted.
+	connect(watcher, &QFutureWatcher<void>::finished, this, [this]() {
+		for (const FileElementSetupData &data : std::as_const(m_file_setups))
+			data.item->applySetupData(data);
+		m_file_setups.clear();
+	});
+	m_future = QtConcurrent::map(m_file_setups,
+								 &FileElementCollectionItem::parseSetupData);
 	#endif
+
+	connect(watcher, &QFutureWatcher<void>::finished,
+			this, &ElementsCollectionModel::loadingFinished);
+	connect(watcher, &QFutureWatcher<void>::finished, watcher, &QFutureWatcher<void>::deleteLater);
 	watcher->setFuture(m_future);
 }
 

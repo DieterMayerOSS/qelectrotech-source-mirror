@@ -21,6 +21,35 @@
 #include "elementcollectionitem.h"
 #include "elementslocation.h"
 
+class FileElementCollectionItem;
+
+/**
+	@brief Plain, thread-safe bundle of a file item's parsed data.
+	parseSetupData() runs on a worker thread and must not touch the
+	QStandardItem; extractSetupData() (reads the item) and applySetupData()
+	(mutates the item) run on the GUI thread. This lets the expensive file
+	read + XML parsing happen in parallel while the QStandardItem mutations
+	stay on the GUI thread (required under Qt6).
+*/
+struct FileElementSetupData
+{
+	FileElementCollectionItem *item = nullptr;
+		// inputs, captured on the GUI thread
+	bool is_dir = false;
+	bool is_element = false;
+	bool is_collection_root = false;
+	QString m_path;
+	QString file_system_path;
+	QString collection_path;
+		// outputs, computed by the worker
+	Qt::ItemFlags flags = Qt::NoItemFlags;
+	bool set_text = false;
+	QString display_name;
+	bool set_search = false;
+	QString search_data;
+	QString tool_tip;
+};
+
 /**
 	@brief The FileElementCollectionItem class
 	This class specialise ElementCollectionItem for manage a collection in
@@ -55,6 +84,13 @@ class FileElementCollectionItem : public ElementCollectionItem
 
 		void setUpData() override;
 		void setUpIcon() override;
+
+			// Split of setUpData() for parallel loading: extract (GUI thread,
+			// reads the item), parse (worker thread, no item access), apply
+			// (GUI thread, mutates the item). setUpData() composes the three.
+		FileElementSetupData extractSetupData();
+		static void parseSetupData(FileElementSetupData &data);
+		void applySetupData(const FileElementSetupData &data);
 
 	private:
 		void setPathName(const QString& path_name,

@@ -302,35 +302,122 @@ void FileElementCollectionItem::addChildAtPath(const QString &collection_name)
  */
 void FileElementCollectionItem::setUpData()
 {
-	if (isDir())
-	{
-		localName();
-		setFlags(Qt::ItemIsSelectable
-		| Qt::ItemIsDragEnabled
-		| Qt::ItemIsDropEnabled
-		| Qt::ItemIsEnabled);
-	}
-	else
-	{
-		setFlags(Qt::ItemIsSelectable
-		| Qt::ItemIsDragEnabled
-		| Qt::ItemIsEnabled);
+	FileElementSetupData data = extractSetupData();
+	parseSetupData(data);
+	applySetupData(data);
+}
 
-		if (m_path.endsWith(".qetmak")) {
-			setData(localName());
-		} else {
-			// Parse standard element information for search
-			ElementsLocation loc(collectionPath());
-			DiagramContext context = loc.elementInformations();
-			QStringList search_list;
-			for (QString& key : context.keys())
-			{ search_list.append(context.value(key).toString()); }
-			search_list.append(localName(loc));
-			setData(search_list.join(" "));
+/**
+	@brief FileElementCollectionItem::extractSetupData
+	GUI-thread step: copy the item state parseSetupData() needs into a plain,
+	thread-safe struct, so the worker never touches the QStandardItem.
+*/
+FileElementSetupData FileElementCollectionItem::extractSetupData()
+{
+	FileElementSetupData data;
+	data.item               = this;
+	data.is_dir             = isDir();
+	data.is_element         = isElement();
+	data.is_collection_root = isCollectionRoot();
+	data.m_path             = m_path;
+	data.file_system_path   = fileSystemPath();
+	data.collection_path    = collectionPath();
+	return data;
+}
+
+/**
+	@brief FileElementCollectionItem::parseSetupData
+	Worker-thread step: do the file read and XML parsing and fill the output
+	fields. Must not touch any QStandardItem (static, works on the plain struct).
+*/
+void FileElementCollectionItem::parseSetupData(FileElementSetupData &data)
+{
+	data.tool_tip = data.collection_path;
+
+	if (data.is_dir)
+	{
+		data.flags = Qt::ItemIsSelectable
+			| Qt::ItemIsDragEnabled
+			| Qt::ItemIsDropEnabled
+			| Qt::ItemIsEnabled;
+
+		if (data.is_collection_root)
+		{
+			QString macrosPath = QETApp::userMacrosDir();
+			if (macrosPath.endsWith("/"))
+				macrosPath.remove(macrosPath.length() - 1, 1);
+
+			if (data.m_path == QETApp::commonElementsDirN())
+				data.display_name = QObject::tr("Collection QET");
+			else if (data.m_path == QETApp::companyElementsDirN())
+				data.display_name = QObject::tr("Collection Company");
+			else if (data.m_path == QETApp::customElementsDirN())
+				data.display_name = QObject::tr("Collection utilisateur");
+			else if (data.m_path == macrosPath)
+				data.display_name = QObject::tr("Makros");
+			else
+				data.display_name = QObject::tr("Collection inconnue");
+			data.set_text = true;
+		}
+		else
+		{
+			QString str(data.file_system_path % "/qet_directory");
+			pugi::xml_document docu;
+			if (docu.load_file(str.toStdWString().c_str()))
+			{
+				if (QString(docu.document_element().name()) == "qet-directory")
+				{
+					NamesList nl;
+					nl.fromXml(docu.document_element());
+					data.display_name = nl.name();
+					data.set_text = true;
+				}
+			}
 		}
 	}
+	else if (data.is_element)
+	{
+		data.flags = Qt::ItemIsSelectable
+			| Qt::ItemIsDragEnabled
+			| Qt::ItemIsEnabled;
 
-	setToolTip(collectionPath());
+		ElementsLocation loc(data.collection_path);
+		QString element_name = loc.name();
+		if (element_name.endsWith(".qetmak"))
+			element_name.remove(".qetmak");
+		data.display_name = element_name;
+		data.set_text = true;
+
+		if (data.m_path.endsWith(".qetmak"))
+		{
+			data.search_data = element_name;
+		}
+		else
+		{
+				// Parse standard element information for search
+			DiagramContext context = loc.elementInformations();
+			QStringList search_list;
+			for (const QString &key : context.keys())
+				search_list.append(context.value(key).toString());
+			search_list.append(element_name);
+			data.search_data = search_list.join(" ");
+		}
+		data.set_search = true;
+	}
+}
+
+/**
+	@brief FileElementCollectionItem::applySetupData
+	GUI-thread step: apply the parsed data to the item (cheap in-memory setters).
+*/
+void FileElementCollectionItem::applySetupData(const FileElementSetupData &data)
+{
+	setFlags(data.flags);
+	if (data.set_text)
+		setText(data.display_name);
+	if (data.set_search)
+		setData(data.search_data);
+	setToolTip(data.tool_tip);
 }
 
 /**

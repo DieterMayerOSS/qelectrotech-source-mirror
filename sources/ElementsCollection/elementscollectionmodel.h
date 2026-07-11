@@ -20,7 +20,9 @@
 
 #include <QStandardItemModel>
 #include <QHash>
+#include <QVector>
 #include "elementslocation.h"
+#include "fileelementcollectionitem.h"
 
 class XmlProjectElementCollectionItem;
 class ElementCollectionItem;
@@ -79,6 +81,8 @@ class ElementsCollectionModel : public QStandardItemModel
 		bool m_hide_element = false;
 		QFuture<void> m_future;
 		QList <ElementCollectionItem *> m_items_list_to_setUp;
+			// Qt6: parsed file-item data awaiting application on the GUI thread
+		QVector <FileElementSetupData> m_file_setups;
 };
 
 #endif // ELEMENTSCOLLECTIONMODEL2_H
