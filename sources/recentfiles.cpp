@@ -33,7 +33,15 @@ RecentFiles::RecentFiles(const QString &identifier, int size, QObject *parent) :
 	menu_(nullptr)
 {
 	mapper_ = new QSignalMapper(this);
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 	connect(mapper_, SIGNAL(mapped(const QString &)), this, SLOT(handleMenuRequest(const QString &)));
+#else
+	// QSignalMapper::mapped(const QString&) was removed in Qt6; the recent-files
+	// menu silently did nothing. Use mappedString (Qt 5.15+) and connect it
+	// straight to the request signal (the intermediate slot is only needed for
+	// the Qt5 SIGNAL/SLOT path above).
+	connect(mapper_, &QSignalMapper::mappedString, this, &RecentFiles::fileOpeningRequested);
+#endif
 
 	extractFilesFromSettings();
 	buildMenu();
