@@ -23,7 +23,7 @@ namespace QetVersion
 
 	QVersionNumber currentVersion()
 	{
-		return QVersionNumber{ 0, 100, 1 };
+		return QVersionNumber{ 0, 200, 1 };
 	}
 
 	QString displayedVersion()
@@ -32,8 +32,10 @@ namespace QetVersion
 
 		switch (VERSION_TYPE) {
 			case dev:
-				// Custom build marker (Qt6 port + complete German translation).
-				// The file-format version (toXmlAttribute) stays 0.100.1.
+				// Qt6 port. currentVersion() (0.200.1) is now also the
+				// file-format version written by toXmlAttribute(): projects
+				// saved here are marked as the new Qt6 line and won't silently
+				// open in a Qt5-toolchain build (font-size handling differs).
 				str.append(QStringLiteral("+qt6-de"));
 				break;
 			case alpha1:
