@@ -927,6 +927,8 @@ void QETDiagramEditor::setUpMenu()
 	menu_affichage -> addAction(m_grey_background);
 	menu_affichage -> addSeparator();
 	menu_affichage -> addActions(m_zoom_actions_group.actions());
+	menu_affichage -> addSeparator();
+	menu_affichage -> addAction(m_verteiler_planer_dock -> toggleViewAction());
 
 	// menu Fenetres
 	slot_updateWindowsMenu();
