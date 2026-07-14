@@ -132,7 +132,12 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model)
 		place(src,  x, Y_SRC);
 		place(fuse, x, Y_FUSE);
 		place(load, x, Y_LOAD);
-		setInfo(fuse, QStringLiteral("label"), c.bmk);
+			// Auto-BMK: an empty repère becomes sequential -F1, -F2, ... ;
+			// a value entered by the user wins.
+		const QString bmk = c.bmk.isEmpty()
+				? QStringLiteral("-F%1").arg(i + 1)
+				: c.bmk;
+		setInfo(fuse, QStringLiteral("label"), bmk);
 		setInfo(fuse, QStringLiteral("comment"), c.rating);
 		setInfo(load, QStringLiteral("label"), c.load);
 

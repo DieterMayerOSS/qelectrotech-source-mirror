@@ -52,10 +52,11 @@ VerteilerPlanerDockWidget::VerteilerPlanerDockWidget(QWidget *parent) :
 	m_table->verticalHeader()->setVisible(false);
 	m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
 
-		// Demo defaults (replaced by whatever the user enters).
-	appendRow(QStringLiteral("-F1"), QStringLiteral("B16A"), QStringLiteral("KG Steckdosen"));
-	appendRow(QStringLiteral("-F2"), QStringLiteral("B10A"), QStringLiteral("EG Licht"));
-	appendRow(QStringLiteral("-F3"), QStringLiteral("B16A"), QStringLiteral("OG Rolladen"));
+		// Demo defaults. The repère (BMK) is left empty on purpose to show the
+		// generator's auto-numbering (-F1, -F2, ...); a manual value overrides it.
+	appendRow(QString(), QStringLiteral("B16A"), QStringLiteral("KG Steckdosen"));
+	appendRow(QString(), QStringLiteral("B10A"), QStringLiteral("EG Licht"));
+	appendRow(QString(), QStringLiteral("B16A"), QStringLiteral("OG Rolladen"));
 
 	auto *add_button    = new QPushButton(tr("Ajouter"), content);
 	auto *remove_button = new QPushButton(tr("Supprimer"), content);
