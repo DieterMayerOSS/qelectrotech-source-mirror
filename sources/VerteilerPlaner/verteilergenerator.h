@@ -22,6 +22,8 @@
 #include <QHash>
 #include <QString>
 
+#include "verteilermodel.h"
+
 class QETProject;
 class Diagram;
 class Element;
@@ -41,8 +43,9 @@ class VerteilerGenerator
 	public:
 		explicit VerteilerGenerator(QETProject *project);
 
-			/// Generate the demo folio. Returns it, or nullptr (no/read-only project).
-		Diagram *generate();
+			/// Generate a folio from the given model. Returns it, or nullptr
+			/// (no/read-only project, or an empty model).
+		Diagram *generate(const VerteilerModel &model);
 
 	private:
 		Element *createElement(const QString &common_path);

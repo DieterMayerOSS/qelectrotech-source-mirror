@@ -17,14 +17,17 @@
 */
 #include "verteilerplanerdockwidget.h"
 
-#include <QLabel>
+#include <QHBoxLayout>
+#include <QHeaderView>
 #include <QPushButton>
+#include <QTableWidget>
+#include <QTableWidgetItem>
 #include <QVBoxLayout>
 #include <QWidget>
 
 /**
 	@brief VerteilerPlanerDockWidget::VerteilerPlanerDockWidget
-	Constructor. Builds the (skeleton) panel content.
+	Constructor. Builds the editable circuit table and the action buttons.
 	@param parent : parent widget
 */
 VerteilerPlanerDockWidget::VerteilerPlanerDockWidget(QWidget *parent) :
@@ -40,19 +43,77 @@ VerteilerPlanerDockWidget::VerteilerPlanerDockWidget(QWidget *parent) :
 	auto *content = new QWidget(this);
 	auto *layout  = new QVBoxLayout(content);
 
-	auto *info = new QLabel(
-				tr("Générateur de tableau / schéma basé sur un modèle.\n"
-				   "Étape 1 : squelette – modèle de données et génération à venir."),
-				content);
-	info->setWordWrap(true);
+	m_table = new QTableWidget(0, 2, content);
+	m_table->setHorizontalHeaderLabels(
+				{ tr("Repère", "circuit table column"),
+				  tr("Récepteur", "circuit table column") });
+	m_table->horizontalHeader()->setStretchLastSection(true);
+	m_table->verticalHeader()->setVisible(false);
+	m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
+
+		// Demo defaults (replaced by whatever the user enters).
+	appendRow(QStringLiteral("-F1"), QStringLiteral("KG Steckdosen"));
+	appendRow(QStringLiteral("-F2"), QStringLiteral("EG Licht"));
+	appendRow(QStringLiteral("-F3"), QStringLiteral("OG Rolladen"));
+
+	auto *add_button    = new QPushButton(tr("Ajouter"), content);
+	auto *remove_button = new QPushButton(tr("Supprimer"), content);
+	connect(add_button, &QPushButton::clicked, this, [this]() { appendRow(); });
+	connect(remove_button, &QPushButton::clicked, this, [this]() {
+		const int row = m_table->currentRow();
+		if (row >= 0) {
+			m_table->removeRow(row);
+		}
+	});
+
+	auto *row_buttons = new QHBoxLayout;
+	row_buttons->addWidget(add_button);
+	row_buttons->addWidget(remove_button);
+	row_buttons->addStretch(1);
 
 	m_generate_button = new QPushButton(tr("Générer le tableau"), content);
 	connect(m_generate_button, &QPushButton::clicked,
 			this, &VerteilerPlanerDockWidget::generateRequested);
 
-	layout->addWidget(info);
+	layout->addWidget(m_table);
+	layout->addLayout(row_buttons);
 	layout->addWidget(m_generate_button);
-	layout->addStretch(1);
 
 	setWidget(content);
+}
+
+/**
+	@brief VerteilerPlanerDockWidget::appendRow
+	Append a circuit row to the table.
+*/
+void VerteilerPlanerDockWidget::appendRow(const QString &bmk, const QString &load)
+{
+	const int row = m_table->rowCount();
+	m_table->insertRow(row);
+	m_table->setItem(row, 0, new QTableWidgetItem(bmk));
+	m_table->setItem(row, 1, new QTableWidgetItem(load));
+}
+
+/**
+	@brief VerteilerPlanerDockWidget::model
+	@return the circuits currently in the table (rows that are entirely empty
+	are skipped).
+*/
+VerteilerModel VerteilerPlanerDockWidget::model() const
+{
+	VerteilerModel m;
+	for (int row = 0; row < m_table->rowCount(); ++row)
+	{
+		VerteilerCircuit c;
+		if (auto *bmk_item = m_table->item(row, 0)) {
+			c.bmk = bmk_item->text().trimmed();
+		}
+		if (auto *load_item = m_table->item(row, 1)) {
+			c.load = load_item->text().trimmed();
+		}
+		if (!c.bmk.isEmpty() || !c.load.isEmpty()) {
+			m.append(c);
+		}
+	}
+	return m;
 }

@@ -39,8 +39,6 @@ namespace {
 
 		// rail-and-drop geometry (scene coordinates)
 	const qreal DX = 140.0, X0 = 120.0, Y_SRC = 100.0, Y_FUSE = 240.0, Y_LOAD = 400.0;
-
-	struct Circuit { QString bmk; QString load_label; };
 }
 
 VerteilerGenerator::VerteilerGenerator(QETProject *project) :
@@ -84,19 +82,15 @@ Element *VerteilerGenerator::createElement(const QString &common_path)
 	Create one folio and fill it with the demo model, as a single undo macro.
 	NB: the folio creation itself is not undoable (QET has no folio undo command).
 */
-Diagram *VerteilerGenerator::generate()
+Diagram *VerteilerGenerator::generate(const VerteilerModel &model)
 {
-	Diagram *folio = m_project ? m_project->addNewDiagram() : nullptr;
-	if (!folio) {         // nullptr on read-only / no project
+	if (model.isEmpty() || !m_project) {
 		return nullptr;
 	}
-
-		// Fixed demo model (replaced by a real data model in a later milestone).
-	const QVector<Circuit> model {
-		{ QStringLiteral("-F1"), QStringLiteral("KG Steckdosen") },
-		{ QStringLiteral("-F2"), QStringLiteral("EG Licht") },
-		{ QStringLiteral("-F3"), QStringLiteral("OG Rolladen") },
-	};
+	Diagram *folio = m_project->addNewDiagram();
+	if (!folio) {         // nullptr on read-only
+		return nullptr;
+	}
 
 	QUndoStack &stack = folio->undoStack();
 	stack.beginMacro(tr("Générer le tableau"));
@@ -119,7 +113,7 @@ Diagram *VerteilerGenerator::generate()
 	};
 
 	int i = 0;
-	for (const Circuit &c : model)
+	for (const VerteilerCircuit &c : model)
 	{
 		const qreal x = X0 + i * DX;
 		Element *src  = createElement(SRC_PATH);
@@ -136,7 +130,7 @@ Diagram *VerteilerGenerator::generate()
 		place(fuse, x, Y_FUSE);
 		place(load, x, Y_LOAD);
 		setLabel(fuse, c.bmk);
-		setLabel(load, c.load_label);
+		setLabel(load, c.load);
 
 			// Rail-and-drop wiring: supply -> fuse(top) ; fuse(bottom) -> load.
 		const QList<Terminal *> st = src->terminals();

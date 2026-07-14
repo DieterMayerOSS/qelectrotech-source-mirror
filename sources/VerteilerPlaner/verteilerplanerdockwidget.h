@@ -20,14 +20,16 @@
 
 #include <QDockWidget>
 
+#include "verteilermodel.h"
+
 class QPushButton;
+class QTableWidget;
 
 /**
 	@brief The VerteilerPlanerDockWidget class
-	Entry point (dock panel) for the model-based distribution board /
-	Stromlaufplan generator ("Weg A"). Milestone 1 provides the skeleton only:
-	the panel and a (disabled) generate button. The data model, rule engine
-	and folio generator are wired in later milestones.
+	Dock panel for the model-based distribution board / Stromlaufplan generator
+	("Weg A"). It hosts an editable table of circuits (add/remove rows); the
+	generator (VerteilerGenerator) builds a folio from model().
 */
 class VerteilerPlanerDockWidget : public QDockWidget
 {
@@ -36,11 +38,17 @@ class VerteilerPlanerDockWidget : public QDockWidget
 	public:
 		explicit VerteilerPlanerDockWidget(QWidget *parent = nullptr);
 
+			/// Current circuits, read from the table (empty rows are skipped).
+		VerteilerModel model() const;
+
 	signals:
 		/// Emitted when the user asks to generate the distribution board.
 		void generateRequested();
 
 	private:
+		void appendRow(const QString &bmk = QString(), const QString &load = QString());
+
+		QTableWidget *m_table = nullptr;
 		QPushButton *m_generate_button = nullptr;
 };
 
