@@ -6872,6 +6872,16 @@ Verfügbare Optionen:
         <translation>Zeigt oder versteckt die Änderungsliste</translation>
     </message>
     <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="901"/>
+        <source>Affiche ou non le planificateur de tableau</source>
+        <translation>Zeigt oder versteckt den Verteiler-Planer</translation>
+    </message>
+    <message>
+        <location filename="../sources/qetdiagrameditor.cpp" line="288"/>
+        <source>Ouvrez un projet pour générer un tableau.</source>
+        <translation>Öffnen Sie ein Projekt, um einen Verteiler zu generieren.</translation>
+    </message>
+    <message>
         <location filename="../sources/qetdiagrameditor.cpp" line="889"/>
         <source>Afficher les projets</source>
         <translation>Projekte anzeigen</translation>
@@ -15053,6 +15063,70 @@ Maximale Länge: %2px
         <location filename="../sources/SearchAndReplace/ui/replaceadvanceddialog.ui" line="92"/>
         <source>Quoi :</source>
         <translation>Was:</translation>
+    </message>
+</context>
+<context>
+    <name>VerteilerGenerator</name>
+    <message>
+        <location filename="../sources/VerteilerPlaner/verteilergenerator.cpp" line="102"/>
+        <source>Générer le tableau</source>
+        <translation>Verteiler generieren</translation>
+    </message>
+</context>
+<context>
+    <name>VerteilerPlanerDockWidget</name>
+    <message>
+        <location filename="../sources/VerteilerPlaner/verteilerplanerdockwidget.cpp" line="34"/>
+        <source>Planificateur de tableau</source>
+        <comment>dock title</comment>
+        <translation>Verteiler-Planer</translation>
+    </message>
+    <message>
+        <source>Repère</source>
+        <comment>circuit table column</comment>
+        <translation>BMK</translation>
+    </message>
+    <message>
+        <source>Calibre</source>
+        <comment>circuit table column</comment>
+        <translation>Kennwert</translation>
+    </message>
+    <message>
+        <source>Récepteur</source>
+        <comment>circuit table column</comment>
+        <translation>Verbraucher</translation>
+    </message>
+    <message>
+        <source>Ajouter</source>
+        <translation>Hinzufügen</translation>
+    </message>
+    <message>
+        <source>Supprimer</source>
+        <translation>Löschen</translation>
+    </message>
+    <message>
+        <source>Générer le tableau</source>
+        <translation>Verteiler generieren</translation>
+    </message>
+    <message>
+        <source>Désignation du projet</source>
+        <translation>Projektbezeichnung</translation>
+    </message>
+    <message>
+        <source>Adresse</source>
+        <translation>Adresse</translation>
+    </message>
+    <message>
+        <source>Auteur</source>
+        <translation>Autor</translation>
+    </message>
+    <message>
+        <source>N° de plan</source>
+        <translation>Zeichnungsnummer</translation>
+    </message>
+    <message>
+        <source>Format</source>
+        <translation>Format</translation>
     </message>
 </context>
 </TS>
