@@ -43,9 +43,9 @@ class VerteilerGenerator
 	public:
 		explicit VerteilerGenerator(QETProject *project);
 
-			/// Generate a folio from the given model. Returns it, or nullptr
-			/// (no/read-only project, or an empty model).
-		Diagram *generate(const VerteilerModel &model);
+			/// Generate a folio from the given model and project settings.
+			/// Returns it, or nullptr (no/read-only project, or an empty model).
+		Diagram *generate(const VerteilerModel &model, const VerteilerConfig &config);
 
 	private:
 		Element *createElement(const QString &common_path);

@@ -22,6 +22,7 @@
 
 #include "verteilermodel.h"
 
+class QLineEdit;
 class QPushButton;
 class QTableWidget;
 
@@ -41,6 +42,9 @@ class VerteilerPlanerDockWidget : public QDockWidget
 			/// Current circuits, read from the table (empty rows are skipped).
 		VerteilerModel model() const;
 
+			/// Current project-level settings (title / author / drawing number).
+		VerteilerConfig config() const;
+
 	signals:
 		/// Emitted when the user asks to generate the distribution board.
 		void generateRequested();
@@ -50,6 +54,9 @@ class VerteilerPlanerDockWidget : public QDockWidget
 					   const QString &rating = QString(),
 					   const QString &load = QString());
 
+		QLineEdit *m_title_edit = nullptr;
+		QLineEdit *m_author_edit = nullptr;
+		QLineEdit *m_drawing_edit = nullptr;
 		QTableWidget *m_table = nullptr;
 		QPushButton *m_generate_button = nullptr;
 };

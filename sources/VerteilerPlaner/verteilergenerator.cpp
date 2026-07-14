@@ -18,8 +18,10 @@
 #include "verteilergenerator.h"
 
 #include "../ElementsCollection/elementslocation.h"
+#include "../bordertitleblock.h"
 #include "../diagram.h"
 #include "../diagramcontext.h"
+#include "../titleblockproperties.h"
 #include "../factory/elementfactory.h"
 #include "../qetgraphicsitem/conductor.h"
 #include "../qetgraphicsitem/element.h"
@@ -82,7 +84,7 @@ Element *VerteilerGenerator::createElement(const QString &common_path)
 	Create one folio and fill it with the demo model, as a single undo macro.
 	NB: the folio creation itself is not undoable (QET has no folio undo command).
 */
-Diagram *VerteilerGenerator::generate(const VerteilerModel &model)
+Diagram *VerteilerGenerator::generate(const VerteilerModel &model, const VerteilerConfig &config)
 {
 	if (model.isEmpty() || !m_project) {
 		return nullptr;
@@ -91,6 +93,19 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model)
 	if (!folio) {         // nullptr on read-only
 		return nullptr;
 	}
+
+		// Project-level settings -> folio title block (empty fields untouched).
+	TitleBlockProperties tbp = folio->border_and_titleblock.exportTitleBlock();
+	if (!config.title.isEmpty()) {
+		tbp.title = config.title;
+	}
+	if (!config.author.isEmpty()) {
+		tbp.author = config.author;
+	}
+	if (!config.drawingNumber.isEmpty()) {
+		tbp.folio = config.drawingNumber;
+	}
+	folio->border_and_titleblock.importTitleBlock(tbp);
 
 	QUndoStack &stack = folio->undoStack();
 	stack.beginMacro(tr("Générer le tableau"));

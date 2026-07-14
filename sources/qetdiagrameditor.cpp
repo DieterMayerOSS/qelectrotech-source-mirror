@@ -282,7 +282,8 @@ void QETDiagramEditor::setUpVerteilerPlaner()
 	connect(m_verteiler_planer_dock, &VerteilerPlanerDockWidget::generateRequested,
 			this, [this]() {
 		if (QETProject *project = currentProject()) {
-			VerteilerGenerator(project).generate(m_verteiler_planer_dock->model());
+			VerteilerGenerator(project).generate(m_verteiler_planer_dock->model(),
+												 m_verteiler_planer_dock->config());
 		} else {
 			statusBar()->showMessage(
 						tr("Ouvrez un projet pour générer un tableau."), 3000);

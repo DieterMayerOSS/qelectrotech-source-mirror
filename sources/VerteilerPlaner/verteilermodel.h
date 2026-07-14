@@ -36,4 +36,17 @@ struct VerteilerCircuit
 /// The distribution-board model: an ordered list of circuits.
 using VerteilerModel = QVector<VerteilerCircuit>;
 
+/**
+	@brief The VerteilerConfig struct
+	Project-level settings written into the generated folio's title block
+	(mirrors the "Allgemein" tab of stromlaufplan.de). Empty fields are left
+	untouched on the folio.
+*/
+struct VerteilerConfig
+{
+	QString title;          ///< project designation / Projektbezeichnung
+	QString author;         ///< author / Autor
+	QString drawingNumber;  ///< drawing number / Zeichnungsnummer
+};
+
 #endif // VERTEILERMODEL_H

@@ -17,8 +17,10 @@
 */
 #include "verteilerplanerdockwidget.h"
 
+#include <QFormLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
+#include <QLineEdit>
 #include <QPushButton>
 #include <QTableWidget>
 #include <QTableWidgetItem>
@@ -42,6 +44,20 @@ VerteilerPlanerDockWidget::VerteilerPlanerDockWidget(QWidget *parent) :
 
 	auto *content = new QWidget(this);
 	auto *layout  = new QVBoxLayout(content);
+
+		// Project-level settings (mirrors stromlaufplan.de's "Allgemein" tab).
+	m_title_edit   = new QLineEdit(content);
+	m_author_edit  = new QLineEdit(content);
+	m_drawing_edit = new QLineEdit(content);
+		// Demo defaults (overwritten by the user).
+	m_title_edit->setText(QStringLiteral("EFH Beispiel"));
+	m_author_edit->setText(QStringLiteral("QET"));
+	m_drawing_edit->setText(QStringLiteral("1001"));
+	auto *form = new QFormLayout;
+	form->addRow(tr("Désignation du projet"), m_title_edit);
+	form->addRow(tr("Auteur"), m_author_edit);
+	form->addRow(tr("N° de plan"), m_drawing_edit);
+	layout->addLayout(form);
 
 	m_table = new QTableWidget(0, 3, content);
 	m_table->setHorizontalHeaderLabels(
@@ -124,4 +140,17 @@ VerteilerModel VerteilerPlanerDockWidget::model() const
 		}
 	}
 	return m;
+}
+
+/**
+	@brief VerteilerPlanerDockWidget::config
+	@return the project-level settings entered by the user.
+*/
+VerteilerConfig VerteilerPlanerDockWidget::config() const
+{
+	VerteilerConfig c;
+	c.title         = m_title_edit->text().trimmed();
+	c.author        = m_author_edit->text().trimmed();
+	c.drawingNumber = m_drawing_edit->text().trimmed();
+	return c;
 }
