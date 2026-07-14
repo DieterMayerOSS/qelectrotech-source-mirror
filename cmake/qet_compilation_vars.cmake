@@ -107,6 +107,8 @@ set(QET_RES_FILES
   ${QET_DIR}/sources/ui/configpage/generalconfigurationpage.ui
   )
 set(QET_SRC_FILES
+  ${QET_DIR}/sources/VerteilerPlaner/verteilerplanerdockwidget.cpp
+  ${QET_DIR}/sources/VerteilerPlaner/verteilerplanerdockwidget.h
   ${QET_DIR}/sources/cli_export.cpp
   ${QET_DIR}/sources/cli_export.h
   ${QET_DIR}/sources/pdf_links.cpp

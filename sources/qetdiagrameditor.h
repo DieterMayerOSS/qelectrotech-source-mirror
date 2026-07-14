@@ -43,6 +43,7 @@ class DiagramPropertiesEditorDockWidget;
 class ElementsCollectionWidget;
 class AutoNumberingDockWidget;
 class TerminalNumberingDialog;
+class VerteilerPlanerDockWidget;
 
 class KAutoSaveFile;
 /**
@@ -85,6 +86,7 @@ class QETDiagramEditor : public QETMainWindow
 		void setUpUndoStack     ();
 		void setUpSelectionPropertiesEditor();
 		void setUpAutonumberingWidget();
+		void setUpVerteilerPlaner();
 		void setUpActions       ();
 		void setUpToolBar       ();
 		void setUpMenu          ();
@@ -252,6 +254,7 @@ class QETDiagramEditor : public QETMainWindow
 		
 		QUndoGroup undo_group;
 		AutoNumberingDockWidget *m_autonumbering_dock;
+		VerteilerPlanerDockWidget *m_verteiler_planer_dock = nullptr;
 		int activeSubWindowIndex;
 		SearchAndReplaceWidget m_search_and_replace_widget;
 };

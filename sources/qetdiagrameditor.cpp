@@ -37,6 +37,7 @@
 #include "recentfiles.h"
 #include "ui/bomexportdialog.h"
 #include "ui/diagrampropertieseditordockwidget.h"
+#include "VerteilerPlaner/verteilerplanerdockwidget.h"
 #include "ui/backupdialog.h"
 #include "ui/dialogwaiting.h"
 #include "undocommand/addelementtextcommand.h"
@@ -112,6 +113,7 @@ QETDiagramEditor::QETDiagramEditor(const QStringList &files, QWidget *parent) :
 	setUpUndoStack();
 	setUpSelectionPropertiesEditor();
 	setUpAutonumberingWidget();
+	setUpVerteilerPlaner();
 
 	setUpActions();
 	setUpToolBar();
@@ -262,6 +264,19 @@ void QETDiagramEditor::setUpAutonumberingWidget()
 				|QDockWidget::DockWidgetMovable
 				|QDockWidget::DockWidgetFloatable);
 	addDockWidget(Qt::RightDockWidgetArea, m_autonumbering_dock);
+}
+
+/**
+	@brief QETDiagramEditor::setUpVerteilerPlaner
+	Set up the distribution board / Stromlaufplan generator dock.
+	Milestone 1: skeleton panel only.
+*/
+void QETDiagramEditor::setUpVerteilerPlaner()
+{
+	m_verteiler_planer_dock = new VerteilerPlanerDockWidget(this);
+	addDockWidget(Qt::RightDockWidgetArea, m_verteiler_planer_dock);
+		// Opt-in feature: hidden by default, shown via the docks menu (createPopupMenu()).
+	m_verteiler_planer_dock->hide();
 }
 
 /**
@@ -883,6 +898,7 @@ void QETDiagramEditor::setUpMenu()
 	diagram_tool_bar      -> toggleViewAction() -> setStatusTip(tr("Affiche ou non la barre d'outils Schéma"));
 	qdw_pa           -> toggleViewAction() -> setStatusTip(tr("Affiche ou non le panel d'appareils"));
 	qdw_undo         -> toggleViewAction() -> setStatusTip(tr("Affiche ou non la liste des modifications"));
+	m_verteiler_planer_dock -> toggleViewAction() -> setStatusTip(tr("Affiche ou non le planificateur de tableau"));
 
 
 	// menu Affichage
