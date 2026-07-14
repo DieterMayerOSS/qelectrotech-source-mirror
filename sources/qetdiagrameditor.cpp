@@ -38,6 +38,7 @@
 #include "ui/bomexportdialog.h"
 #include "ui/diagrampropertieseditordockwidget.h"
 #include "VerteilerPlaner/verteilerplanerdockwidget.h"
+#include "VerteilerPlaner/verteilergenerator.h"
 #include "ui/backupdialog.h"
 #include "ui/dialogwaiting.h"
 #include "undocommand/addelementtextcommand.h"
@@ -277,6 +278,16 @@ void QETDiagramEditor::setUpVerteilerPlaner()
 	addDockWidget(Qt::RightDockWidgetArea, m_verteiler_planer_dock);
 		// Opt-in feature: hidden by default, shown via the docks menu (createPopupMenu()).
 	m_verteiler_planer_dock->hide();
+
+	connect(m_verteiler_planer_dock, &VerteilerPlanerDockWidget::generateRequested,
+			this, [this]() {
+		if (QETProject *project = currentProject()) {
+			VerteilerGenerator(project).generate();
+		} else {
+			statusBar()->showMessage(
+						tr("Ouvrez un projet pour générer un tableau."), 3000);
+		}
+	});
 }
 
 /**

@@ -47,8 +47,6 @@ VerteilerPlanerDockWidget::VerteilerPlanerDockWidget(QWidget *parent) :
 	info->setWordWrap(true);
 
 	m_generate_button = new QPushButton(tr("Générer le tableau"), content);
-	m_generate_button->setEnabled(false);
-	m_generate_button->setToolTip(tr("Pas encore implémenté (étape 2)."));
 	connect(m_generate_button, &QPushButton::clicked,
 			this, &VerteilerPlanerDockWidget::generateRequested);
 
