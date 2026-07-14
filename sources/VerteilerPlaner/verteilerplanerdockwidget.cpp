@@ -17,6 +17,7 @@
 */
 #include "verteilerplanerdockwidget.h"
 
+#include <QComboBox>
 #include <QFormLayout>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -47,16 +48,22 @@ VerteilerPlanerDockWidget::VerteilerPlanerDockWidget(QWidget *parent) :
 
 		// Project-level settings (mirrors stromlaufplan.de's "Allgemein" tab).
 	m_title_edit   = new QLineEdit(content);
+	m_address_edit = new QLineEdit(content);
 	m_author_edit  = new QLineEdit(content);
 	m_drawing_edit = new QLineEdit(content);
+	m_paper_combo  = new QComboBox(content);
+	m_paper_combo->addItems({ QStringLiteral("A3"), QStringLiteral("A4") });
 		// Demo defaults (overwritten by the user).
 	m_title_edit->setText(QStringLiteral("EFH Beispiel"));
+	m_address_edit->setText(QStringLiteral("Musterstraße 15, 12345 Musterhausen"));
 	m_author_edit->setText(QStringLiteral("QET"));
 	m_drawing_edit->setText(QStringLiteral("1001"));
 	auto *form = new QFormLayout;
 	form->addRow(tr("Désignation du projet"), m_title_edit);
+	form->addRow(tr("Adresse"), m_address_edit);
 	form->addRow(tr("Auteur"), m_author_edit);
 	form->addRow(tr("N° de plan"), m_drawing_edit);
+	form->addRow(tr("Format"), m_paper_combo);
 	layout->addLayout(form);
 
 	m_table = new QTableWidget(0, 3, content);
@@ -150,7 +157,9 @@ VerteilerConfig VerteilerPlanerDockWidget::config() const
 {
 	VerteilerConfig c;
 	c.title         = m_title_edit->text().trimmed();
+	c.address       = m_address_edit->text().trimmed();
 	c.author        = m_author_edit->text().trimmed();
 	c.drawingNumber = m_drawing_edit->text().trimmed();
+	c.paperSize     = m_paper_combo->currentText();
 	return c;
 }

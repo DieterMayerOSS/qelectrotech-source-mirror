@@ -18,6 +18,7 @@
 #include "verteilergenerator.h"
 
 #include "../ElementsCollection/elementslocation.h"
+#include "../borderproperties.h"
 #include "../bordertitleblock.h"
 #include "../diagram.h"
 #include "../diagramcontext.h"
@@ -95,9 +96,17 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model, const Verteil
 	}
 
 		// Project-level settings -> folio title block (empty fields untouched).
+		// The default title block renders no address field, so the address is
+		// folded into the (multi-line) title, like stromlaufplan.de's cartouche.
 	TitleBlockProperties tbp = folio->border_and_titleblock.exportTitleBlock();
-	if (!config.title.isEmpty()) {
-		tbp.title = config.title;
+	QString title = config.title;
+	if (!config.address.isEmpty()) {
+		title = title.isEmpty()
+				? config.address
+				: (title + QStringLiteral("\n") + config.address);
+	}
+	if (!title.isEmpty()) {
+		tbp.title = title;
 	}
 	if (!config.author.isEmpty()) {
 		tbp.author = config.author;
@@ -106,6 +115,14 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model, const Verteil
 		tbp.folio = config.drawingNumber;
 	}
 	folio->border_and_titleblock.importTitleBlock(tbp);
+
+		// Paper format: A4 uses a smaller folio grid; A3 keeps the default.
+	if (config.paperSize == QLatin1String("A4")) {
+		BorderProperties bp = folio->border_and_titleblock.exportBorder();
+		bp.columns_count = 12;
+		bp.rows_count    = 6;
+		folio->border_and_titleblock.importBorder(bp);
+	}
 
 	QUndoStack &stack = folio->undoStack();
 	stack.beginMacro(tr("Générer le tableau"));

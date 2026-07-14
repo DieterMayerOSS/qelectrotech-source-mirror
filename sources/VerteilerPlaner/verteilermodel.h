@@ -45,8 +45,10 @@ using VerteilerModel = QVector<VerteilerCircuit>;
 struct VerteilerConfig
 {
 	QString title;          ///< project designation / Projektbezeichnung
+	QString address;        ///< project address / Projektadresse (folded into the title)
 	QString author;         ///< author / Autor
 	QString drawingNumber;  ///< drawing number / Zeichnungsnummer
+	QString paperSize;      ///< folio format: "A3" (default) or "A4"
 };
 
 #endif // VERTEILERMODEL_H

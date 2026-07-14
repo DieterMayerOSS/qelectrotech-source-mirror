@@ -22,6 +22,7 @@
 
 #include "verteilermodel.h"
 
+class QComboBox;
 class QLineEdit;
 class QPushButton;
 class QTableWidget;
@@ -55,8 +56,10 @@ class VerteilerPlanerDockWidget : public QDockWidget
 					   const QString &load = QString());
 
 		QLineEdit *m_title_edit = nullptr;
+		QLineEdit *m_address_edit = nullptr;
 		QLineEdit *m_author_edit = nullptr;
 		QLineEdit *m_drawing_edit = nullptr;
+		QComboBox *m_paper_combo = nullptr;
 		QTableWidget *m_table = nullptr;
 		QPushButton *m_generate_button = nullptr;
 };
