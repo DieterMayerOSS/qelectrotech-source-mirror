@@ -28,8 +28,9 @@
 */
 struct VerteilerCircuit
 {
-	QString bmk;    ///< device tag / Betriebsmittelkennzeichen, e.g. "-F1"
-	QString load;   ///< consumer designation, e.g. "KG Steckdosen"
+	QString bmk;     ///< device tag / Betriebsmittelkennzeichen, e.g. "-F1"
+	QString rating;  ///< protective device rating / Kennwert, e.g. "B16A"
+	QString load;    ///< consumer designation, e.g. "KG Steckdosen"
 };
 
 /// The distribution-board model: an ordered list of circuits.

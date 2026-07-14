@@ -100,10 +100,13 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model)
 			// so after push() the element is placed and its terminals resolve.
 		stack.push(new AddGraphicsObjectCommand(e, folio, QPointF(x, y)));
 	};
-	auto setLabel = [&](Element *e, const QString &label) {
+	auto setInfo = [&](Element *e, const QString &key, const QString &value) {
+		if (value.isEmpty()) {
+			return;
+		}
 		const DiagramContext old_info = e->elementInformations();
 		DiagramContext new_info = old_info;
-		new_info.addValue(QStringLiteral("label"), label);
+		new_info.addValue(key, value);
 		stack.push(new ChangeElementInformationCommand(e, old_info, new_info));
 	};
 	auto wire = [&](Terminal *a, Terminal *b) {
@@ -129,8 +132,9 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model)
 		place(src,  x, Y_SRC);
 		place(fuse, x, Y_FUSE);
 		place(load, x, Y_LOAD);
-		setLabel(fuse, c.bmk);
-		setLabel(load, c.load);
+		setInfo(fuse, QStringLiteral("label"), c.bmk);
+		setInfo(fuse, QStringLiteral("comment"), c.rating);
+		setInfo(load, QStringLiteral("label"), c.load);
 
 			// Rail-and-drop wiring: supply -> fuse(top) ; fuse(bottom) -> load.
 		const QList<Terminal *> st = src->terminals();

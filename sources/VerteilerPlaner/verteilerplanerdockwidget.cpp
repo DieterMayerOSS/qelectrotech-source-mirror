@@ -43,18 +43,19 @@ VerteilerPlanerDockWidget::VerteilerPlanerDockWidget(QWidget *parent) :
 	auto *content = new QWidget(this);
 	auto *layout  = new QVBoxLayout(content);
 
-	m_table = new QTableWidget(0, 2, content);
+	m_table = new QTableWidget(0, 3, content);
 	m_table->setHorizontalHeaderLabels(
 				{ tr("Repère", "circuit table column"),
+				  tr("Calibre", "circuit table column"),
 				  tr("Récepteur", "circuit table column") });
 	m_table->horizontalHeader()->setStretchLastSection(true);
 	m_table->verticalHeader()->setVisible(false);
 	m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
 
 		// Demo defaults (replaced by whatever the user enters).
-	appendRow(QStringLiteral("-F1"), QStringLiteral("KG Steckdosen"));
-	appendRow(QStringLiteral("-F2"), QStringLiteral("EG Licht"));
-	appendRow(QStringLiteral("-F3"), QStringLiteral("OG Rolladen"));
+	appendRow(QStringLiteral("-F1"), QStringLiteral("B16A"), QStringLiteral("KG Steckdosen"));
+	appendRow(QStringLiteral("-F2"), QStringLiteral("B10A"), QStringLiteral("EG Licht"));
+	appendRow(QStringLiteral("-F3"), QStringLiteral("B16A"), QStringLiteral("OG Rolladen"));
 
 	auto *add_button    = new QPushButton(tr("Ajouter"), content);
 	auto *remove_button = new QPushButton(tr("Supprimer"), content);
@@ -86,12 +87,15 @@ VerteilerPlanerDockWidget::VerteilerPlanerDockWidget(QWidget *parent) :
 	@brief VerteilerPlanerDockWidget::appendRow
 	Append a circuit row to the table.
 */
-void VerteilerPlanerDockWidget::appendRow(const QString &bmk, const QString &load)
+void VerteilerPlanerDockWidget::appendRow(const QString &bmk,
+										  const QString &rating,
+										  const QString &load)
 {
 	const int row = m_table->rowCount();
 	m_table->insertRow(row);
 	m_table->setItem(row, 0, new QTableWidgetItem(bmk));
-	m_table->setItem(row, 1, new QTableWidgetItem(load));
+	m_table->setItem(row, 1, new QTableWidgetItem(rating));
+	m_table->setItem(row, 2, new QTableWidgetItem(load));
 }
 
 /**
@@ -108,10 +112,13 @@ VerteilerModel VerteilerPlanerDockWidget::model() const
 		if (auto *bmk_item = m_table->item(row, 0)) {
 			c.bmk = bmk_item->text().trimmed();
 		}
-		if (auto *load_item = m_table->item(row, 1)) {
+		if (auto *rating_item = m_table->item(row, 1)) {
+			c.rating = rating_item->text().trimmed();
+		}
+		if (auto *load_item = m_table->item(row, 2)) {
 			c.load = load_item->text().trimmed();
 		}
-		if (!c.bmk.isEmpty() || !c.load.isEmpty()) {
+		if (!c.bmk.isEmpty() || !c.rating.isEmpty() || !c.load.isEmpty()) {
 			m.append(c);
 		}
 	}

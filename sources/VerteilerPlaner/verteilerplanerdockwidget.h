@@ -46,7 +46,9 @@ class VerteilerPlanerDockWidget : public QDockWidget
 		void generateRequested();
 
 	private:
-		void appendRow(const QString &bmk = QString(), const QString &load = QString());
+		void appendRow(const QString &bmk = QString(),
+					   const QString &rating = QString(),
+					   const QString &load = QString());
 
 		QTableWidget *m_table = nullptr;
 		QPushButton *m_generate_button = nullptr;
