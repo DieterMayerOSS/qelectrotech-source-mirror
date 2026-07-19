@@ -62,6 +62,10 @@ void TextEditor::updateForm()
 	m_rotation_sb -> setValue(m_text -> rotation());
 	m_size_sb -> setValue(m_text -> font().pointSize());
 	m_font_pb -> setText(m_text -> font().family());
+
+	const Qt::Alignment a = m_text -> alignment();
+	m_alignment_cb -> setCurrentIndex(
+		(a & Qt::AlignHCenter) ? 1 : (a & Qt::AlignRight) ? 2 : 0);
 #ifdef BUILD_WITHOUT_KF5
 #else
 	m_color_pb -> setColor(m_text -> defaultTextColor());
@@ -80,6 +84,7 @@ void TextEditor::setUpChangeConnection(QPointer<PartText> part)
 	m_change_connection << connect(part, &PartText::rotationChanged,  this, &TextEditor::updateForm);
 	m_change_connection << connect(part, &PartText::fontChanged,      this, &TextEditor::updateForm);
 	m_change_connection << connect(part, &PartText::colorChanged,     this, &TextEditor::updateForm);
+	m_change_connection << connect(part, &PartText::alignmentChanged, this, &TextEditor::updateForm);
 }
 
 void TextEditor::disconnectChangeConnection()
@@ -246,6 +251,21 @@ void TextEditor::setUpEditConnection()
 		}
 		m_size_sb->setFocus();
 	});
+
+	m_edit_connection << connect(m_alignment_cb, QOverload<int>::of(&QComboBox::currentIndexChanged), [this]() {
+		const Qt::Alignment align = static_cast<Qt::Alignment>(m_alignment_cb -> currentData().toInt());
+		for (int i=0; i < m_parts.length(); i++) {
+			PartText* partText = m_parts[i];
+			if (partText -> alignment() != align) {
+				QPropertyUndoCommand *undo = new QPropertyUndoCommand(
+					partText, "alignment",
+					QVariant::fromValue(partText -> alignment()),
+					QVariant::fromValue(align));
+				undo -> setText(tr("Modifier l'alignement d'un texte"));
+				undoStack().push(undo);
+			}
+		}
+	});
 }
 
 /**
@@ -371,8 +391,18 @@ void TextEditor::setUpWidget(QWidget *parent)
 
 	gridLayout->addWidget(m_font_pb, 2, 2, 1, 2);
 
+	QLabel *label_align = new QLabel(tr("Alignement :"), parent);
+	gridLayout->addWidget(label_align, 3, 0, 1, 1);
+
+	m_alignment_cb = new QComboBox(parent);
+	m_alignment_cb->setObjectName(QString::fromUtf8("m_alignment_cb"));
+	m_alignment_cb->addItem(tr("Gauche"),  static_cast<int>(Qt::AlignLeft));
+	m_alignment_cb->addItem(tr("Centré"),  static_cast<int>(Qt::AlignHCenter));
+	m_alignment_cb->addItem(tr("Droite"),  static_cast<int>(Qt::AlignRight));
+	gridLayout->addWidget(m_alignment_cb, 3, 1, 1, 3);
+
 	QSpacerItem *verticalSpacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
 
-	gridLayout->addItem(verticalSpacer, 3, 2, 1, 1);
+	gridLayout->addItem(verticalSpacer, 4, 2, 1, 1);
 	setLayout(gridLayout);
 }

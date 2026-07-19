@@ -34,11 +34,13 @@ class PartText : public QGraphicsTextItem, public CustomElementPart {
 	Q_PROPERTY(QColor color READ defaultTextColor WRITE setDefaultTextColor NOTIFY colorChanged)
 	Q_PROPERTY(QString text READ toPlainText WRITE setPlainText NOTIFY plainTextChanged)
 	Q_PROPERTY(QFont font READ font WRITE setFont NOTIFY fontChanged)
+	Q_PROPERTY(Qt::Alignment alignment READ alignment WRITE setAlignment NOTIFY alignmentChanged)
 
 	signals:
 		void fontChanged(const QFont &font);
 		void colorChanged(const QColor &color);
 		void plainTextChanged(const QString &text);
+		void alignmentChanged(Qt::Alignment alignment);
 
 		// constructors, destructor
 	public:
@@ -77,6 +79,8 @@ class PartText : public QGraphicsTextItem, public CustomElementPart {
 		void setDefaultTextColor(const QColor &color);
 		void setPlainText(const QString &text);
 		void setFont(const QFont &font);
+		Qt::Alignment alignment() const {return m_alignment;}
+		void setAlignment(Qt::Alignment alignment);
 
 	public slots:
 		void adjustItemPosition(int = 0);
@@ -97,6 +101,9 @@ class PartText : public QGraphicsTextItem, public CustomElementPart {
 
 	private:
 		QPointF margin() const;
+		void applyAlignment();
+		Qt::Alignment m_alignment = Qt::AlignLeft;
+		bool m_applying_alignment = false;
 		QString previous_text;
 		qreal real_font_size_;
 		QPointF saved_point_;

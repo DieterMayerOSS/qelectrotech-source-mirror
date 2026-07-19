@@ -514,6 +514,18 @@ void ElementPictureFactory::parseText(const QDomElement &dom, QPainter &painter,
 	text_document.setDefaultFont(font_);
 	text_document.setPlainText(dom.attribute("text"));
 
+		//Horizontal alignment of multi-line static texts (absent = left).
+	const QString align = dom.attribute("alignment", "left");
+	if (align == "center" || align == "right")
+	{
+		QTextOption opt = text_document.defaultTextOption();
+		opt.setAlignment(align == "center" ? Qt::AlignHCenter : Qt::AlignRight);
+		text_document.setDefaultTextOption(opt);
+			//A layout width is needed for alignment to take effect; the ideal
+			//width keeps shorter lines aligned under the widest one.
+		text_document.setTextWidth(text_document.idealWidth());
+	}
+
 	painter.setTransform(QTransform(), false);
 	painter.translate(dom.attribute("x").toDouble(), dom.attribute("y").toDouble());
 	painter.rotate(dom.attribute("rotation", "0").toDouble());

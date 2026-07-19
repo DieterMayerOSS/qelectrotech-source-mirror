@@ -24,6 +24,7 @@
 #include <QWidget>
 #include <QSpinBox>
 #include <QLineEdit>
+#include <QComboBox>
 #include <QPushButton>
 #ifdef BUILD_WITHOUT_KF5
 #else
@@ -64,6 +65,7 @@ class TextEditor : public ElementItemEditor {
 		QSpinBox *m_x_sb;
 		QSpinBox *m_size_sb;
 		QLineEdit *m_line_edit;
+		QComboBox *m_alignment_cb;
 		QPushButton *m_font_pb;
 #ifdef BUILD_WITHOUT_KF5
 #else

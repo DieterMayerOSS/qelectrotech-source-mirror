@@ -57,6 +57,13 @@ PartText::PartText(QETElementEditor *editor, QGraphicsItem *parent) :
 		SIGNAL(contentsChanged()),
 		this,
 		SLOT(adjustItemPosition()));
+	// Re-fit the alignment box to the new content when the text changes, so
+	// centred/right-aligned multi-line labels keep aligning to the widest line.
+	connect(document(), &QTextDocument::contentsChanged, this, [this]() {
+		if (m_alignment != Qt::AlignLeft) {
+			applyAlignment();
+		}
+	});
 }
 
 /// Destructeur
@@ -131,9 +138,67 @@ void PartText::fromXml(const QDomElement &xml_element) {
 
 	setDefaultTextColor(QColor(xml_element.attribute("color", "#000000")));
 	setPlainText(xml_element.attribute("text"));
+
+	const QString align = xml_element.attribute("alignment", "left");
+	if (align == "center") {
+		setAlignment(Qt::AlignHCenter);
+	} else if (align == "right") {
+		setAlignment(Qt::AlignRight);
+	} else {
+		setAlignment(Qt::AlignLeft);
+	}
+
 	setPos(xml_element.attribute("x").toDouble(),
 			xml_element.attribute("y").toDouble());
 	QGraphicsObject::setRotation(QET::correctAngle(xml_element.attribute("rotation", QString::number(0)).toDouble()));
+}
+
+/**
+	@brief PartText::setAlignment
+	Set the horizontal alignment of the (possibly multi-line) text. Only the
+	horizontal flag is kept (AlignLeft / AlignHCenter / AlignRight).
+*/
+void PartText::setAlignment(Qt::Alignment alignment)
+{
+	Qt::Alignment h = alignment & Qt::AlignHorizontal_Mask;
+	if (h == Qt::Alignment()) {
+		h = Qt::AlignLeft;
+	}
+	if (h == m_alignment) {
+		return;
+	}
+	m_alignment = h;
+	applyAlignment();
+	emit alignmentChanged(m_alignment);
+}
+
+/**
+	@brief PartText::applyAlignment
+	Apply the current alignment to the text document. Alignment is only visible
+	when the document has a layout width to align within, so the natural (ideal)
+	width is used: shorter lines centre/right-align under the widest one without
+	introducing word wrapping. AlignLeft restores the default free width.
+*/
+void PartText::applyAlignment()
+{
+	if (m_applying_alignment) {
+		return;
+	}
+	m_applying_alignment = true;
+
+	QTextOption opt = document()->defaultTextOption();
+	opt.setAlignment(m_alignment);
+	document()->setDefaultTextOption(opt);
+
+	if (m_alignment == Qt::AlignLeft) {
+		setTextWidth(-1);
+	} else {
+		setTextWidth(-1);
+		setTextWidth(document()->idealWidth());
+	}
+
+	m_applying_alignment = false;
+	adjustItemPosition();
 }
 
 /**
@@ -154,6 +219,12 @@ const QDomElement PartText::toXml(QDomDocument &xml_document) const
 	xml_element.setAttribute("font", font().toString());
 	xml_element.setAttribute("rotation", QString::number(rot));
 	xml_element.setAttribute("color", defaultTextColor().name());
+	// Only written when non-default, so existing .elmt files stay byte-identical.
+	if (m_alignment == Qt::AlignHCenter) {
+		xml_element.setAttribute("alignment", "center");
+	} else if (m_alignment == Qt::AlignRight) {
+		xml_element.setAttribute("alignment", "right");
+	}
 
 	return(xml_element);
 }
