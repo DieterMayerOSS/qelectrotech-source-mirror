@@ -28,6 +28,12 @@ jobs:
       pages: write
       id-token: write  # Required by SignPath
 
+    env:
+      # Code signing only works where the SignPath secrets exist, i.e. in the
+      # upstream repository. Forks do not inherit secrets, so the signing step
+      # is skipped there and the (unsigned) MSI is published as-is.
+      SIGN_ENABLED: ${{ secrets.SIGNPATH_ORGANIZATION_ID != '' && secrets.SIGNPATH_API_TOKEN != '' }}
+
     steps:
       # ----------------------------------------------------------------
       # 1. Checkout (to retrieve QElectroTech.wxs and sources)
@@ -301,6 +307,7 @@ jobs:
       #     dist/ (overwriting the unsigned one).
       # ----------------------------------------------------------------
       - name: Sign MSI via SignPath
+        if: env.SIGN_ENABLED == 'true'
         uses: signpath/github-action-submit-signing-request@v2
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
