@@ -38,7 +38,11 @@ namespace {
 		// Built-in (common://) library elements used by the demo model.
 	const QString SRC_PATH  = QStringLiteral("common://10_electric/10_allpole/100_folio_referencing/01coming_arrow.elmt");
 	const QString FUSE_PATH = QStringLiteral("common://10_electric/10_allpole/200_fuses_protective_gears/10_fuses/pojistka1p.elmt");
-	const QString LOAD_PATH = QStringLiteral("common://10_electric/10_allpole/130_terminals_terminal_strips/90_terminal_strips_diagram/90-20-0001.elmt");
+		// 90-20-0002 hat sein Terminal OBEN (orientation "n"); die Variante -0001 hat
+		// es unten. Da der Verbraucher unterhalb der Sicherung sitzt und von oben
+		// angefahren wird, wuerde -0001 den Leiter am Geraet vorbei und wieder
+		// zurueck fuehren -> uebereinanderliegende Segmente.
+	const QString LOAD_PATH = QStringLiteral("common://10_electric/10_allpole/130_terminals_terminal_strips/90_terminal_strips_diagram/90-20-0002.elmt");
 
 		// rail-and-drop geometry (scene coordinates)
 	const qreal DX = 140.0, X0 = 120.0, Y_SRC = 100.0, Y_FUSE = 240.0, Y_LOAD = 400.0;
