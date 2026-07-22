@@ -15087,6 +15087,16 @@ Maximale Länge: %2px
         <translation>BMK</translation>
     </message>
     <message>
+        <source>Groupe DDR</source>
+        <comment>circuit table column</comment>
+        <translation>RCD-Gruppe</translation>
+    </message>
+    <message>
+        <source>Phase</source>
+        <comment>circuit table column</comment>
+        <translation>Phase</translation>
+    </message>
+    <message>
         <source>Calibre</source>
         <comment>circuit table column</comment>
         <translation>Kennwert</translation>
