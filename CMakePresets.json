@@ -1,0 +1,57 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "qt6",
+      "inherits": "base",
+      "displayName": "Qt6 (without KDE Frameworks)",
+      "description": "Qt6 build. KF5 is Qt5-based, so it has to be off here; there is no KF6 path yet.",
+      "cacheVariables": {
+        "QT_VERSION_MAJOR": {
+          "type": "STRING",
+          "value": "6"
+        },
+        "BUILD_WITH_KF5": {
+          "type": "BOOL",
+          "value": "OFF"
+        }
+      }
+    },
+    {
+      "name": "qt5",
+      "inherits": "base",
+      "displayName": "Qt5 (project default)",
+      "description": "Qt5 build, keeping the project's default KF5 integration.",
+      "cacheVariables": {
+        "QT_VERSION_MAJOR": {
+          "type": "STRING",
+          "value": "5"
+        }
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "qt6",
+      "configurePreset": "qt6"
+    },
+    {
+      "name": "qt5",
+      "configurePreset": "qt5"
+    }
+  ]
+}
