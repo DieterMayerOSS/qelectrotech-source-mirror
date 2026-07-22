@@ -50,9 +50,20 @@ namespace {
 		// Diagonale zeichnet und die Schiene an jedem Abzweig knicken laesst.
 	const QString TAP_PATH  = QStringLiteral("common://10_electric/10_allpole/114_connections/bod.elmt");
 
-		// rail-and-drop geometry (scene coordinates)
-		// Y_RAIL traegt die waagrechte Potentialschiene, darunter haengen die Abgaenge.
-	const qreal DX = 140.0, X0 = 120.0, Y_RAIL = 100.0, Y_FUSE = 240.0, Y_LOAD = 400.0;
+		// Fehlerstromschutzschalter, einpolige Darstellung (Terminals N/S bei +/-20)
+		// aus 11_singlepole -- passend zu unserem einpolig gezeichneten Plan.
+	const QString RCD_PATH  = QStringLiteral("common://10_electric/11_singlepole/200_fuses_protective_gears/50_residual_current_circuit_breaker/ddr1.elmt");
+
+		// rail-and-drop geometry (scene coordinates), von oben nach unten:
+		//   Y_RAIL  Hauptschiene (Einspeisung)
+		//   Y_RCD   Fehlerstromschutzschalter einer Gruppe
+		//   Y_SUB   Gruppenschiene hinter dem RCD
+		//   Y_FUSE  Leitungsschutz
+		//   Y_LOAD  Verbraucher
+		// Direktabgaenge ohne Gruppe ueberspringen Y_RCD und Y_SUB.
+	const qreal DX = 140.0, X0 = 120.0;
+	const qreal Y_RAIL = 100.0, Y_RCD = 190.0, Y_SUB = 280.0,
+				Y_FUSE = 370.0, Y_LOAD = 500.0;
 		// Abstand der Einspeisung links vom ersten Abzweig.
 	const qreal X_SRC_OFFSET = 70.0;
 }
@@ -172,57 +183,129 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model, const Verteil
 		return nullptr;
 	};
 
-	QList<Element *> taps;      // T-Abzweige auf der Schiene, in Spaltenreihenfolge
+		// Stromkreise nach FI-Gruppe buendeln, Gruppen in der Reihenfolge ihres
+		// ersten Auftretens. Der leere Schluessel sammelt die Direktabgaenge.
+	QList<QString> group_order;
+	QHash<QString, QList<VerteilerCircuit>> by_group;
+	for (const VerteilerCircuit &c : model) {
+		if (!by_group.contains(c.group)) {
+			group_order.append(c.group);
+		}
+		by_group[c.group].append(c);
+	}
 
-	int i = 0;
-	for (const VerteilerCircuit &c : model)
+		// Einen kompletten Abgang aufbauen: Sicherung + Verbraucher unter einem
+		// bereits gesetzten Abzweigpunkt. Gibt false zurueck, wenn ein Element fehlt.
+	auto buildOutgoing = [&](Element *tap, qreal x, const VerteilerCircuit &c,
+							 const QString &bmk) -> bool
 	{
-		const qreal x = X0 + i * DX;
-		Element *tap  = createElement(TAP_PATH);
 		Element *fuse = createElement(FUSE_PATH);
 		Element *load = createElement(LOAD_PATH);
-		if (!tap || !fuse || !load)   // a library element is missing -> skip cleanly
+		if (!fuse || !load) {
+			delete fuse; delete load;
+			return false;
+		}
+		place(fuse, x, Y_FUSE);
+		place(load, x, Y_LOAD);
+		setInfo(fuse, QStringLiteral("label"),   bmk);
+		setInfo(fuse, QStringLiteral("comment"), c.rating);
+		setInfo(load, QStringLiteral("label"),   c.load);
+		wire(terminalAt(tap,  Qet::South), terminalAt(fuse, Qet::North));
+		wire(terminalAt(fuse, Qet::South), terminalAt(load, Qet::North));
+		return true;
+	};
+
+	QList<Element *> main_taps;   // Abzweigpunkte auf der Hauptschiene
+	int column = 0;               // fortlaufende Spalte ueber alle Gruppen hinweg
+	int direct_counter = 0;       // Zaehler fuer die Auto-BMK der Direktabgaenge
+
+	for (const QString &key : group_order)
+	{
+		const QList<VerteilerCircuit> circuits = by_group.value(key);
+
+		if (key.isEmpty())
 		{
-			delete tap; delete fuse; delete load;
-			++i;
+				// Direktabgang: haengt unmittelbar an der Hauptschiene.
+			for (const VerteilerCircuit &c : circuits)
+			{
+				const qreal x = X0 + column * DX;
+				Element *tap = createElement(TAP_PATH);
+				if (tap) {
+					place(tap, x, Y_RAIL);
+					main_taps.append(tap);
+						// Direktabgaenge werden als -F0.x gezaehlt, damit sie sich nicht
+						// mit den Gruppen-BMK (-F1, -F2, ...) ueberschneiden.
+					const QString bmk = c.bmk.isEmpty()
+							? QStringLiteral("-F0.%1").arg(++direct_counter)
+							: c.bmk;
+					buildOutgoing(tap, x, c, bmk);
+				}
+				++column;
+			}
 			continue;
 		}
 
-		place(tap,  x, Y_RAIL);
-		place(fuse, x, Y_FUSE);
-		place(load, x, Y_LOAD);
-		taps.append(tap);
+			// FI-Gruppe: Hauptschiene -> RCD -> Gruppenschiene -> Abgaenge.
+		const qreal x_first = X0 + column * DX;
+		Element *rcd_tap = createElement(TAP_PATH);
+		Element *rcd     = createElement(RCD_PATH);
+		if (!rcd_tap || !rcd) {
+			delete rcd_tap; delete rcd;
+			column += circuits.size();
+			continue;
+		}
+		place(rcd_tap, x_first, Y_RAIL);
+		place(rcd,     x_first, Y_RCD);
+		main_taps.append(rcd_tap);
+		wire(terminalAt(rcd_tap, Qet::South), terminalAt(rcd, Qet::North));
 
-			// Auto-BMK: an empty repère becomes sequential -F1, -F2, ... ;
-			// a value entered by the user wins.
-		const QString bmk = c.bmk.isEmpty()
-				? QStringLiteral("-F%1").arg(i + 1)
-				: c.bmk;
-		setInfo(fuse, QStringLiteral("label"), bmk);
-		setInfo(fuse, QStringLiteral("comment"), c.rating);
-		setInfo(load, QStringLiteral("label"), c.load);
+			// BMK des RCD: der Gruppenname, mit fuehrendem Bindestrich.
+		const QString group_base = key.startsWith(QLatin1Char('-')) ? key.mid(1) : key;
+		setInfo(rcd, QStringLiteral("label"), QStringLiteral("-%1").arg(group_base));
 
-			// Abgang: Schienenabzweig (Sued) -> Sicherung (Nord),
-			// Sicherung (Sued) -> Verbraucher (Nord).
-		wire(terminalAt(tap,  Qet::South), terminalAt(fuse, Qet::North));
-		wire(terminalAt(fuse, Qet::South), terminalAt(load, Qet::North));
+		QList<Element *> sub_taps;
+		int member = 0;
+		for (const VerteilerCircuit &c : circuits)
+		{
+			const qreal x = X0 + column * DX;
+			Element *tap = createElement(TAP_PATH);
+			if (tap) {
+				place(tap, x, Y_SUB);
+				sub_taps.append(tap);
+					// Hierarchische Auto-BMK innerhalb der Gruppe: -F1.1, -F1.2, ...
+				const QString bmk = c.bmk.isEmpty()
+						? QStringLiteral("-%1.%2").arg(group_base).arg(member + 1)
+						: c.bmk;
+				buildOutgoing(tap, x, c, bmk);
+			}
+			++column;
+			++member;
+		}
 
-		++i;
+		if (!sub_taps.isEmpty())
+		{
+				// RCD speist die Gruppenschiene, dann Punkt zu Punkt weiter.
+			wire(terminalAt(rcd, Qet::South), terminalAt(sub_taps.first(), Qet::North));
+			for (int t = 1; t < sub_taps.size(); ++t) {
+				wire(terminalAt(sub_taps.at(t - 1), Qet::East),
+					 terminalAt(sub_taps.at(t),     Qet::West));
+			}
+		}
 	}
 
 		// Waagrechte Potentialschiene: Einspeisung -> erster Abzweig, dann von
 		// Abzweig zu Abzweig. Alle Punkte liegen auf Y_RAIL, die Leiter werden
 		// daher gerade und koennen sich nicht ueberlagern.
-	if (!taps.isEmpty())
+	if (!main_taps.isEmpty())
 	{
 		if (Element *src = createElement(SRC_PATH))
 		{
 			place(src, X0 - X_SRC_OFFSET, Y_RAIL);
-			wire(terminalAt(src, Qet::East), terminalAt(taps.first(), Qet::West));
+			wire(terminalAt(src, Qet::East), terminalAt(main_taps.first(), Qet::West));
 		}
-		for (int t = 1; t < taps.size(); ++t) {
-			wire(terminalAt(taps.at(t - 1), Qet::East),
-				 terminalAt(taps.at(t),     Qet::West));
+		for (int t = 1; t < main_taps.size(); ++t) {
+			wire(terminalAt(main_taps.at(t - 1), Qet::East),
+				 terminalAt(main_taps.at(t),     Qet::West));
 		}
 	}
 

@@ -66,9 +66,10 @@ VerteilerPlanerDockWidget::VerteilerPlanerDockWidget(QWidget *parent) :
 	form->addRow(tr("Format"), m_paper_combo);
 	layout->addLayout(form);
 
-	m_table = new QTableWidget(0, 3, content);
+	m_table = new QTableWidget(0, 4, content);
 	m_table->setHorizontalHeaderLabels(
 				{ tr("Repère", "circuit table column"),
+				  tr("Groupe DDR", "circuit table column"),
 				  tr("Calibre", "circuit table column"),
 				  tr("Récepteur", "circuit table column") });
 	m_table->horizontalHeader()->setStretchLastSection(true);
@@ -76,10 +77,13 @@ VerteilerPlanerDockWidget::VerteilerPlanerDockWidget(QWidget *parent) :
 	m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
 
 		// Demo defaults. The repère (BMK) is left empty on purpose to show the
-		// generator's auto-numbering (-F1, -F2, ...); a manual value overrides it.
-	appendRow(QString(), QStringLiteral("B16A"), QStringLiteral("KG Steckdosen"));
-	appendRow(QString(), QStringLiteral("B10A"), QStringLiteral("EG Licht"));
-	appendRow(QString(), QStringLiteral("B16A"), QStringLiteral("OG Rolladen"));
+		// generator's auto-numbering; a manual value overrides it. An empty group
+		// means the circuit hangs directly on the main rail, otherwise all rows
+		// sharing a group name end up behind one common RCD.
+	appendRow(QString(), QString(),             QStringLiteral("B16A"), QStringLiteral("KG Steckdosen"));
+	appendRow(QString(), QStringLiteral("F1"),  QStringLiteral("B16A"), QStringLiteral("EG Steckdosen"));
+	appendRow(QString(), QStringLiteral("F1"),  QStringLiteral("B10A"), QStringLiteral("EG Licht"));
+	appendRow(QString(), QStringLiteral("F2"),  QStringLiteral("B10A"), QStringLiteral("OG Licht"));
 
 	auto *add_button    = new QPushButton(tr("Ajouter"), content);
 	auto *remove_button = new QPushButton(tr("Supprimer"), content);
@@ -112,14 +116,16 @@ VerteilerPlanerDockWidget::VerteilerPlanerDockWidget(QWidget *parent) :
 	Append a circuit row to the table.
 */
 void VerteilerPlanerDockWidget::appendRow(const QString &bmk,
+										  const QString &group,
 										  const QString &rating,
 										  const QString &load)
 {
 	const int row = m_table->rowCount();
 	m_table->insertRow(row);
 	m_table->setItem(row, 0, new QTableWidgetItem(bmk));
-	m_table->setItem(row, 1, new QTableWidgetItem(rating));
-	m_table->setItem(row, 2, new QTableWidgetItem(load));
+	m_table->setItem(row, 1, new QTableWidgetItem(group));
+	m_table->setItem(row, 2, new QTableWidgetItem(rating));
+	m_table->setItem(row, 3, new QTableWidgetItem(load));
 }
 
 /**
@@ -136,13 +142,17 @@ VerteilerModel VerteilerPlanerDockWidget::model() const
 		if (auto *bmk_item = m_table->item(row, 0)) {
 			c.bmk = bmk_item->text().trimmed();
 		}
-		if (auto *rating_item = m_table->item(row, 1)) {
+		if (auto *group_item = m_table->item(row, 1)) {
+			c.group = group_item->text().trimmed();
+		}
+		if (auto *rating_item = m_table->item(row, 2)) {
 			c.rating = rating_item->text().trimmed();
 		}
-		if (auto *load_item = m_table->item(row, 2)) {
+		if (auto *load_item = m_table->item(row, 3)) {
 			c.load = load_item->text().trimmed();
 		}
-		if (!c.bmk.isEmpty() || !c.rating.isEmpty() || !c.load.isEmpty()) {
+		if (!c.bmk.isEmpty() || !c.group.isEmpty()
+				|| !c.rating.isEmpty() || !c.load.isEmpty()) {
 			m.append(c);
 		}
 	}

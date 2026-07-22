@@ -52,6 +52,7 @@ class VerteilerPlanerDockWidget : public QDockWidget
 
 	private:
 		void appendRow(const QString &bmk = QString(),
+					   const QString &group = QString(),
 					   const QString &rating = QString(),
 					   const QString &load = QString());
 
