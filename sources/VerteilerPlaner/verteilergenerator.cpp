@@ -72,8 +72,12 @@ namespace {
 		//   Y_LOAD  Verbraucher
 		// Direktabgaenge ohne Gruppe ueberspringen Y_RCD und Y_SUB.
 	const qreal DX = 140.0, X0 = 120.0;
-	const qreal Y_RAIL = 100.0, Y_RCD = 180.0, Y_SUB = 255.0,
-				Y_FUSE = 330.0, Y_TERM = 415.0, Y_LOAD = 500.0;
+		// Drei Phasenschienen uebereinander. Ein Abgang zweigt von genau einer
+		// Schiene ab; der Abgang kreuzt die darunterliegenden Schienen ohne
+		// Verbindungspunkt und ist damit korrekt als "nicht verbunden" lesbar.
+	const qreal Y_L1 = 60.0, Y_L2 = 90.0, Y_L3 = 120.0;
+	const qreal Y_RCD = 190.0, Y_SUB = 260.0,
+				Y_FUSE = 335.0, Y_TERM = 415.0, Y_LOAD = 500.0;
 		// Abstand der Einspeisung links vom ersten Abzweig.
 	const qreal X_SRC_OFFSET = 70.0;
 }
@@ -244,7 +248,25 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model, const Verteil
 		return true;
 	};
 
-	QList<Element *> main_taps;   // Abzweigpunkte auf der Hauptschiene
+		// Abzweigpunkte je Phasenschiene, in Spaltenreihenfolge gesammelt.
+	const QStringList PHASES { QStringLiteral("L1"), QStringLiteral("L2"),
+							   QStringLiteral("L3") };
+	QHash<QString, qreal> rail_y {
+		{ PHASES.at(0), Y_L1 }, { PHASES.at(1), Y_L2 }, { PHASES.at(2), Y_L3 } };
+	QHash<QString, QList<Element *>> rail_taps;
+
+	int auto_phase = 0;           // reihum fuer Abgaenge ohne Phasenvorgabe
+		// Phase bestimmen: manuelle Angabe schlaegt die Automatik. Der Zaehler
+		// laeuft nur bei automatischer Vergabe weiter, damit manuell gesetzte
+		// Abgaenge die gleichmaessige Verteilung nicht verschieben.
+	auto choosePhase = [&](const QString &manual) -> QString {
+		const QString up = manual.trimmed().toUpper();
+		if (rail_y.contains(up)) {
+			return up;
+		}
+		return PHASES.at(auto_phase++ % PHASES.size());
+	};
+
 	int column = 0;               // fortlaufende Spalte ueber alle Gruppen hinweg
 	int direct_counter = 0;       // Zaehler fuer die Auto-BMK der Direktabgaenge
 
@@ -254,14 +276,15 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model, const Verteil
 
 		if (key.isEmpty())
 		{
-				// Direktabgang: haengt unmittelbar an der Hauptschiene.
+				// Direktabgang: haengt unmittelbar an einer Phasenschiene.
 			for (const VerteilerCircuit &c : circuits)
 			{
 				const qreal x = X0 + column * DX;
 				Element *tap = createElement(TAP_PATH);
 				if (tap) {
-					place(tap, x, Y_RAIL);
-					main_taps.append(tap);
+					const QString phase = choosePhase(c.phase);
+					place(tap, x, rail_y.value(phase));
+					rail_taps[phase].append(tap);
 						// Direktabgaenge werden als -F0.x gezaehlt, damit sie sich nicht
 						// mit den Gruppen-BMK (-F1, -F2, ...) ueberschneiden.
 					const QString bmk = c.bmk.isEmpty()
@@ -283,9 +306,13 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model, const Verteil
 			column += circuits.size();
 			continue;
 		}
-		place(rcd_tap, x_first, Y_RAIL);
+			// Die Gruppe haengt als Ganzes an einer Phase; ihre Abgaenge erben sie
+			// ueber die Gruppenschiene. Massgeblich ist die Vorgabe des ersten
+			// Stromkreises der Gruppe.
+		const QString group_phase = choosePhase(circuits.first().phase);
+		place(rcd_tap, x_first, rail_y.value(group_phase));
 		place(rcd,     x_first, Y_RCD);
-		main_taps.append(rcd_tap);
+		rail_taps[group_phase].append(rcd_tap);
 		wire(terminalAt(rcd_tap, Qet::South), terminalAt(rcd, Qet::North));
 
 			// BMK des RCD: der Gruppenname, mit fuehrendem Bindestrich.
@@ -325,16 +352,21 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model, const Verteil
 		// Waagrechte Potentialschiene: Einspeisung -> erster Abzweig, dann von
 		// Abzweig zu Abzweig. Alle Punkte liegen auf Y_RAIL, die Leiter werden
 		// daher gerade und koennen sich nicht ueberlagern.
-	if (!main_taps.isEmpty())
+	for (const QString &phase : PHASES)
 	{
+		const QList<Element *> taps = rail_taps.value(phase);
+		if (taps.isEmpty()) {
+			continue;           // unbenutzte Phase bekommt keine Schiene
+		}
 		if (Element *src = createElement(SRC_PATH))
 		{
-			place(src, X0 - X_SRC_OFFSET, Y_RAIL);
-			wire(terminalAt(src, Qet::East), terminalAt(main_taps.first(), Qet::West));
+			place(src, X0 - X_SRC_OFFSET, rail_y.value(phase));
+			setInfo(src, QStringLiteral("label"), phase);
+			wire(terminalAt(src, Qet::East), terminalAt(taps.first(), Qet::West));
 		}
-		for (int t = 1; t < main_taps.size(); ++t) {
-			wire(terminalAt(main_taps.at(t - 1), Qet::East),
-				 terminalAt(main_taps.at(t),     Qet::West));
+		for (int t = 1; t < taps.size(); ++t) {
+			wire(terminalAt(taps.at(t - 1), Qet::East),
+				 terminalAt(taps.at(t),     Qet::West));
 		}
 	}
 

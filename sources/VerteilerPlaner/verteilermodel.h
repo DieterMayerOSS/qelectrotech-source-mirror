@@ -31,6 +31,8 @@ struct VerteilerCircuit
 	QString bmk;     ///< device tag / Betriebsmittelkennzeichen, e.g. "-F1"
 	QString group;   ///< RCD group / FI-Gruppe, e.g. "F1"; empty = fed directly
 	                 ///< from the main rail (no RCD in front)
+	QString phase;   ///< "L1", "L2" or "L3"; empty = distributed automatically.
+	                 ///< Circuits inside an RCD group inherit the group's phase.
 	QString rating;  ///< protective device rating / Kennwert, e.g. "B16A"
 	QString load;    ///< consumer designation, e.g. "KG Steckdosen"
 };
