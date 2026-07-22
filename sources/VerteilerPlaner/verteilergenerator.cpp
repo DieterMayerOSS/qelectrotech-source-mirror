@@ -44,8 +44,17 @@ namespace {
 		// zurueck fuehren -> uebereinanderliegende Segmente.
 	const QString LOAD_PATH = QStringLiteral("common://10_electric/10_allpole/130_terminals_terminal_strips/90_terminal_strips_diagram/90-20-0002.elmt");
 
+		// Verbindungspunkt auf der Potentialschiene: gefuellter Punkt mit vier
+		// Terminals (N/O/S/W) bei +/-2. Die Schiene laeuft dadurch gerade durch und
+		// der Abgang zweigt senkrecht ab -- anders als "thruright", das eine
+		// Diagonale zeichnet und die Schiene an jedem Abzweig knicken laesst.
+	const QString TAP_PATH  = QStringLiteral("common://10_electric/10_allpole/114_connections/bod.elmt");
+
 		// rail-and-drop geometry (scene coordinates)
-	const qreal DX = 140.0, X0 = 120.0, Y_SRC = 100.0, Y_FUSE = 240.0, Y_LOAD = 400.0;
+		// Y_RAIL traegt die waagrechte Potentialschiene, darunter haengen die Abgaenge.
+	const qreal DX = 140.0, X0 = 120.0, Y_RAIL = 100.0, Y_FUSE = 240.0, Y_LOAD = 400.0;
+		// Abstand der Einspeisung links vom ersten Abzweig.
+	const qreal X_SRC_OFFSET = 70.0;
 }
 
 VerteilerGenerator::VerteilerGenerator(QETProject *project) :
@@ -150,24 +159,40 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model, const Verteil
 			stack.push(new AddGraphicsObjectCommand(new Conductor(a, b), folio));
 		}
 	};
+		// Terminals ueber ihre Orientierung waehlen statt ueber den Listenindex -
+		// die Reihenfolge in der .elmt-Datei ist nicht garantiert.
+	auto terminalAt = [](Element *e, Qet::Orientation o) -> Terminal * {
+		if (e) {
+			for (Terminal *t : e->terminals()) {
+				if (t->orientation() == o) {
+					return t;
+				}
+			}
+		}
+		return nullptr;
+	};
+
+	QList<Element *> taps;      // T-Abzweige auf der Schiene, in Spaltenreihenfolge
 
 	int i = 0;
 	for (const VerteilerCircuit &c : model)
 	{
 		const qreal x = X0 + i * DX;
-		Element *src  = createElement(SRC_PATH);
+		Element *tap  = createElement(TAP_PATH);
 		Element *fuse = createElement(FUSE_PATH);
 		Element *load = createElement(LOAD_PATH);
-		if (!src || !fuse || !load)   // a library element is missing -> skip cleanly
+		if (!tap || !fuse || !load)   // a library element is missing -> skip cleanly
 		{
-			delete src; delete fuse; delete load;
+			delete tap; delete fuse; delete load;
 			++i;
 			continue;
 		}
 
-		place(src,  x, Y_SRC);
+		place(tap,  x, Y_RAIL);
 		place(fuse, x, Y_FUSE);
 		place(load, x, Y_LOAD);
+		taps.append(tap);
+
 			// Auto-BMK: an empty repère becomes sequential -F1, -F2, ... ;
 			// a value entered by the user wins.
 		const QString bmk = c.bmk.isEmpty()
@@ -177,18 +202,28 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model, const Verteil
 		setInfo(fuse, QStringLiteral("comment"), c.rating);
 		setInfo(load, QStringLiteral("label"), c.load);
 
-			// Rail-and-drop wiring: supply -> fuse(top) ; fuse(bottom) -> load.
-		const QList<Terminal *> st = src->terminals();
-		const QList<Terminal *> ft = fuse->terminals();
-		const QList<Terminal *> lt = load->terminals();
-		if (!st.isEmpty() && ft.size() >= 2) {
-			wire(st.first(), ft.at(0));
-		}
-		if (ft.size() >= 2 && !lt.isEmpty()) {
-			wire(ft.at(1), lt.first());
-		}
+			// Abgang: Schienenabzweig (Sued) -> Sicherung (Nord),
+			// Sicherung (Sued) -> Verbraucher (Nord).
+		wire(terminalAt(tap,  Qet::South), terminalAt(fuse, Qet::North));
+		wire(terminalAt(fuse, Qet::South), terminalAt(load, Qet::North));
 
 		++i;
+	}
+
+		// Waagrechte Potentialschiene: Einspeisung -> erster Abzweig, dann von
+		// Abzweig zu Abzweig. Alle Punkte liegen auf Y_RAIL, die Leiter werden
+		// daher gerade und koennen sich nicht ueberlagern.
+	if (!taps.isEmpty())
+	{
+		if (Element *src = createElement(SRC_PATH))
+		{
+			place(src, X0 - X_SRC_OFFSET, Y_RAIL);
+			wire(terminalAt(src, Qet::East), terminalAt(taps.first(), Qet::West));
+		}
+		for (int t = 1; t < taps.size(); ++t) {
+			wire(terminalAt(taps.at(t - 1), Qet::East),
+				 terminalAt(taps.at(t),     Qet::West));
+		}
 	}
 
 	stack.endMacro();
