@@ -27,7 +27,11 @@
 #include "../qetgraphicsitem/conductor.h"
 #include "../qetgraphicsitem/element.h"
 #include "../qetgraphicsitem/terminal.h"
+#include "../qetgraphicsitem/terminalelement.h"
 #include "../qetproject.h"
+#include "../TerminalStrip/terminalstrip.h"
+#include "../TerminalStrip/UndoCommand/addterminalstripcommand.h"
+#include "../TerminalStrip/UndoCommand/addterminaltostripcommand.h"
 #include "../undocommand/addgraphicsobjectcommand.h"
 #include "../undocommand/changeelementinformationcommand.h"
 
@@ -202,6 +206,8 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model, const Verteil
 
 		// Fortlaufende Klemmennummer ueber alle Abgaenge des Folios hinweg.
 	int terminal_number = 0;
+		// Die erzeugten Klemmen werden am Ende zu einer Klemmleiste zusammengefasst.
+	QVector<QSharedPointer<RealTerminal>> real_terminals;
 
 		// Einen kompletten Abgang aufbauen: Sicherung, Reihenklemme und Verbraucher
 		// unter einem bereits gesetzten Abzweigpunkt.
@@ -224,6 +230,13 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model, const Verteil
 			// Klemmen werden je Leiste fortlaufend ab 1 nummeriert.
 		setInfo(term, QStringLiteral("label"),
 				QString::number(++terminal_number));
+			// borne_continuite traegt link_type="terminal", QET erzeugt dafuer ein
+			// TerminalElement -- dessen RealTerminal sammeln wir fuer die Leiste.
+		if (auto *term_element = dynamic_cast<TerminalElement *>(term)) {
+			if (auto real_t = term_element->realTerminal()) {
+				real_terminals.append(real_t);
+			}
+		}
 		setInfo(load, QStringLiteral("label"),   c.load);
 		wire(terminalAt(tap,  Qet::South), terminalAt(fuse, Qet::North));
 		wire(terminalAt(fuse, Qet::South), terminalAt(term, Qet::North));
@@ -323,6 +336,18 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model, const Verteil
 			wire(terminalAt(main_taps.at(t - 1), Qet::East),
 				 terminalAt(main_taps.at(t),     Qet::West));
 		}
+	}
+
+		// Die erzeugten Klemmen zu einer Klemmleiste zusammenfassen. Ohne diesen
+		// Schritt blieben sie freie Klemmen und tauchten im Klemmenplan nicht auf.
+	if (!real_terminals.isEmpty())
+	{
+		auto *strip = new TerminalStrip(m_project);
+		strip->setName(config.title.isEmpty()
+					   ? tr("Tableau")
+					   : config.title);
+		stack.push(new AddTerminalStripCommand(strip, m_project));
+		stack.push(new AddTerminalToStripCommand(real_terminals, strip));
 	}
 
 	stack.endMacro();
