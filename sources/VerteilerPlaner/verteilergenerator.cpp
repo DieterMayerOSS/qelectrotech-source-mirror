@@ -76,8 +76,15 @@ namespace {
 		// Schiene ab; der Abgang kreuzt die darunterliegenden Schienen ohne
 		// Verbindungspunkt und ist damit korrekt als "nicht verbunden" lesbar.
 	const qreal Y_L1 = 60.0, Y_L2 = 90.0, Y_L3 = 120.0;
+		// N- und PE-Schiene liegen unmittelbar ueber der Klemmleiste: ihre Abgaenge
+		// sind dadurch kurz und muessen den Plan nicht von oben durchqueren.
+	const qreal Y_N = 370.0, Y_PE = 392.0;
 	const qreal Y_RCD = 190.0, Y_SUB = 260.0,
-				Y_FUSE = 335.0, Y_TERM = 415.0, Y_LOAD = 500.0;
+				Y_FUSE = 335.0, Y_TERM = 430.0, Y_LOAD = 520.0;
+		// Seitlicher Versatz der Klemmen L / N / PE innerhalb eines Abgangs. Die
+		// N- und PE-Abzweige sitzen ebenfalls versetzt, damit die senkrechten
+		// Abgaenge die jeweils andere Schiene kreuzen ohne sie zu beruehren.
+	const qreal DX_TERM = 30.0;
 		// Abstand der Einspeisung links vom ersten Abzweig.
 	const qreal X_SRC_OFFSET = 70.0;
 }
@@ -212,39 +219,66 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model, const Verteil
 	int terminal_number = 0;
 		// Die erzeugten Klemmen werden am Ende zu einer Klemmleiste zusammengefasst.
 	QVector<QSharedPointer<RealTerminal>> real_terminals;
+		// Abzweigpunkte auf der N- und der PE-Schiene, in Spaltenreihenfolge.
+	QList<Element *> n_taps, pe_taps;
 
-		// Einen kompletten Abgang aufbauen: Sicherung, Reihenklemme und Verbraucher
-		// unter einem bereits gesetzten Abzweigpunkt.
-		// Gibt false zurueck, wenn ein Element fehlt.
-	auto buildOutgoing = [&](Element *tap, qreal x, const VerteilerCircuit &c,
-							 const QString &bmk) -> bool
-	{
-		Element *fuse = createElement(FUSE_PATH);
+		// Eine Klemme setzen, fortlaufend nummerieren und fuer die Klemmleiste
+		// vormerken. borne_continuite traegt link_type="terminal", QET erzeugt
+		// dafuer ein TerminalElement -- dessen RealTerminal braucht die Leiste.
+	auto placeTerminal = [&](qreal x, const QString &suffix) -> Element * {
 		Element *term = createElement(TERM_PATH);
-		Element *load = createElement(LOAD_PATH);
-		if (!fuse || !term || !load) {
-			delete fuse; delete term; delete load;
-			return false;
+		if (!term) {
+			return nullptr;
 		}
-		place(fuse, x, Y_FUSE);
 		place(term, x, Y_TERM);
-		place(load, x, Y_LOAD);
-		setInfo(fuse, QStringLiteral("label"),   bmk);
-		setInfo(fuse, QStringLiteral("comment"), c.rating);
-			// Klemmen werden je Leiste fortlaufend ab 1 nummeriert.
 		setInfo(term, QStringLiteral("label"),
-				QString::number(++terminal_number));
-			// borne_continuite traegt link_type="terminal", QET erzeugt dafuer ein
-			// TerminalElement -- dessen RealTerminal sammeln wir fuer die Leiste.
+				QStringLiteral("%1%2").arg(++terminal_number).arg(suffix));
 		if (auto *term_element = dynamic_cast<TerminalElement *>(term)) {
 			if (auto real_t = term_element->realTerminal()) {
 				real_terminals.append(real_t);
 			}
 		}
+		return term;
+	};
+
+		// Einen kompletten Abgang aufbauen: Sicherung, die drei Klemmen L/N/PE und
+		// den Verbraucher unter einem bereits gesetzten Phasenabzweig.
+		// N und PE kommen von ihren eigenen Schienen und enden an der Klemme --
+		// die Klemmleiste ist die Uebergabestelle an die Feldleitung.
+		// Gibt false zurueck, wenn ein Element fehlt.
+	auto buildOutgoing = [&](Element *tap, qreal x, const VerteilerCircuit &c,
+							 const QString &bmk) -> bool
+	{
+		Element *fuse   = createElement(FUSE_PATH);
+		Element *n_tap  = createElement(TAP_PATH);
+		Element *pe_tap = createElement(TAP_PATH);
+		Element *load   = createElement(LOAD_PATH);
+		if (!fuse || !n_tap || !pe_tap || !load) {
+			delete fuse; delete n_tap; delete pe_tap; delete load;
+			return false;
+		}
+
+		place(fuse,   x,                  Y_FUSE);
+		place(n_tap,  x + DX_TERM,        Y_N);
+		place(pe_tap, x + 2.0 * DX_TERM,  Y_PE);
+		place(load,   x,                  Y_LOAD);
+		n_taps.append(n_tap);
+		pe_taps.append(pe_tap);
+
+		setInfo(fuse, QStringLiteral("label"),   bmk);
+		setInfo(fuse, QStringLiteral("comment"), c.rating);
 		setInfo(load, QStringLiteral("label"),   c.load);
+
+			// Klemmen der Reihe nach: L unter der Sicherung, daneben N und PE.
+		Element *term_l  = placeTerminal(x,                 QStringLiteral(""));
+		Element *term_n  = placeTerminal(x + DX_TERM,       QStringLiteral("N"));
+		Element *term_pe = placeTerminal(x + 2.0 * DX_TERM, QStringLiteral("PE"));
+
 		wire(terminalAt(tap,  Qet::South), terminalAt(fuse, Qet::North));
-		wire(terminalAt(fuse, Qet::South), terminalAt(term, Qet::North));
-		wire(terminalAt(term, Qet::South), terminalAt(load, Qet::North));
+		wire(terminalAt(fuse, Qet::South), terminalAt(term_l, Qet::North));
+		wire(terminalAt(term_l, Qet::South), terminalAt(load, Qet::North));
+		wire(terminalAt(n_tap,  Qet::South), terminalAt(term_n,  Qet::North));
+		wire(terminalAt(pe_tap, Qet::South), terminalAt(term_pe, Qet::North));
 		return true;
 	};
 
@@ -352,23 +386,31 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model, const Verteil
 		// Waagrechte Potentialschiene: Einspeisung -> erster Abzweig, dann von
 		// Abzweig zu Abzweig. Alle Punkte liegen auf Y_RAIL, die Leiter werden
 		// daher gerade und koennen sich nicht ueberlagern.
-	for (const QString &phase : PHASES)
+		// Eine Schiene fertigstellen: Einspeisung links davor, dann die
+		// Abzweigpunkte der Reihe nach verbinden. Leere Schienen entfallen.
+	auto buildRail = [&](const QList<Element *> &taps, qreal y,
+						 const QString &label)
 	{
-		const QList<Element *> taps = rail_taps.value(phase);
 		if (taps.isEmpty()) {
-			continue;           // unbenutzte Phase bekommt keine Schiene
+			return;
 		}
 		if (Element *src = createElement(SRC_PATH))
 		{
-			place(src, X0 - X_SRC_OFFSET, rail_y.value(phase));
-			setInfo(src, QStringLiteral("label"), phase);
+			place(src, X0 - X_SRC_OFFSET, y);
+			setInfo(src, QStringLiteral("label"), label);
 			wire(terminalAt(src, Qet::East), terminalAt(taps.first(), Qet::West));
 		}
 		for (int t = 1; t < taps.size(); ++t) {
 			wire(terminalAt(taps.at(t - 1), Qet::East),
 				 terminalAt(taps.at(t),     Qet::West));
 		}
+	};
+
+	for (const QString &phase : PHASES) {
+		buildRail(rail_taps.value(phase), rail_y.value(phase), phase);
 	}
+	buildRail(n_taps,  Y_N,  QStringLiteral("N"));
+	buildRail(pe_taps, Y_PE, QStringLiteral("PE"));
 
 		// Die erzeugten Klemmen zu einer Klemmleiste zusammenfassen. Ohne diesen
 		// Schritt blieben sie freie Klemmen und tauchten im Klemmenplan nicht auf.
