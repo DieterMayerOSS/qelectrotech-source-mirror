@@ -54,16 +54,22 @@ namespace {
 		// aus 11_singlepole -- passend zu unserem einpolig gezeichneten Plan.
 	const QString RCD_PATH  = QStringLiteral("common://10_electric/11_singlepole/200_fuses_protective_gears/50_residual_current_circuit_breaker/ddr1.elmt");
 
+		// Reihenklemme mit link_type="terminal" -- solche Elemente erkennt QET als
+		// echte Klemme (TerminalElement), sie stehen damit dem Klemmleisten-Editor
+		// und dem Klemmenplan zur Verfuegung. Terminals symmetrisch bei +/-10.
+	const QString TERM_PATH = QStringLiteral("common://10_electric/10_allpole/130_terminals_terminal_strips/borne_continuite.elmt");
+
 		// rail-and-drop geometry (scene coordinates), von oben nach unten:
 		//   Y_RAIL  Hauptschiene (Einspeisung)
 		//   Y_RCD   Fehlerstromschutzschalter einer Gruppe
 		//   Y_SUB   Gruppenschiene hinter dem RCD
 		//   Y_FUSE  Leitungsschutz
+		//   Y_TERM  Reihenklemme (Uebergabe an die Feldleitung)
 		//   Y_LOAD  Verbraucher
 		// Direktabgaenge ohne Gruppe ueberspringen Y_RCD und Y_SUB.
 	const qreal DX = 140.0, X0 = 120.0;
-	const qreal Y_RAIL = 100.0, Y_RCD = 190.0, Y_SUB = 280.0,
-				Y_FUSE = 370.0, Y_LOAD = 500.0;
+	const qreal Y_RAIL = 100.0, Y_RCD = 180.0, Y_SUB = 255.0,
+				Y_FUSE = 330.0, Y_TERM = 415.0, Y_LOAD = 500.0;
 		// Abstand der Einspeisung links vom ersten Abzweig.
 	const qreal X_SRC_OFFSET = 70.0;
 }
@@ -194,24 +200,34 @@ Diagram *VerteilerGenerator::generate(const VerteilerModel &model, const Verteil
 		by_group[c.group].append(c);
 	}
 
-		// Einen kompletten Abgang aufbauen: Sicherung + Verbraucher unter einem
-		// bereits gesetzten Abzweigpunkt. Gibt false zurueck, wenn ein Element fehlt.
+		// Fortlaufende Klemmennummer ueber alle Abgaenge des Folios hinweg.
+	int terminal_number = 0;
+
+		// Einen kompletten Abgang aufbauen: Sicherung, Reihenklemme und Verbraucher
+		// unter einem bereits gesetzten Abzweigpunkt.
+		// Gibt false zurueck, wenn ein Element fehlt.
 	auto buildOutgoing = [&](Element *tap, qreal x, const VerteilerCircuit &c,
 							 const QString &bmk) -> bool
 	{
 		Element *fuse = createElement(FUSE_PATH);
+		Element *term = createElement(TERM_PATH);
 		Element *load = createElement(LOAD_PATH);
-		if (!fuse || !load) {
-			delete fuse; delete load;
+		if (!fuse || !term || !load) {
+			delete fuse; delete term; delete load;
 			return false;
 		}
 		place(fuse, x, Y_FUSE);
+		place(term, x, Y_TERM);
 		place(load, x, Y_LOAD);
 		setInfo(fuse, QStringLiteral("label"),   bmk);
 		setInfo(fuse, QStringLiteral("comment"), c.rating);
+			// Klemmen werden je Leiste fortlaufend ab 1 nummeriert.
+		setInfo(term, QStringLiteral("label"),
+				QString::number(++terminal_number));
 		setInfo(load, QStringLiteral("label"),   c.load);
 		wire(terminalAt(tap,  Qet::South), terminalAt(fuse, Qet::North));
-		wire(terminalAt(fuse, Qet::South), terminalAt(load, Qet::North));
+		wire(terminalAt(fuse, Qet::South), terminalAt(term, Qet::North));
+		wire(terminalAt(term, Qet::South), terminalAt(load, Qet::North));
 		return true;
 	};
 
